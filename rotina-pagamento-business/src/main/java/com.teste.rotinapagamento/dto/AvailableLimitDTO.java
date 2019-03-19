@@ -1,5 +1,6 @@
 package com.teste.rotinapagamento.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -9,17 +10,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class AvailableLimitDTO {
 
     @JsonProperty("amount")
-    private AmountDTO amount;
+    private Double amount;
 
-    public AvailableLimitDTO(AmountDTO amount) {
+    public AvailableLimitDTO() {
+    }
+
+    @JsonIgnore
+    public AvailableLimitDTO(Double amount) {
         this.amount = amount;
     }
 
-    public AmountDTO getAmount() {
+    public Double getAmount() {
         return amount;
     }
 
-    public void setAmount(AmountDTO amount) {
+    public void setAmount(Double amount) {
         this.amount = amount;
     }
 }

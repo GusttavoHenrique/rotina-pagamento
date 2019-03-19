@@ -1,8 +1,11 @@
 package com.teste.rotinapagamento.repository;
 
 import com.teste.rotinapagamento.dto.AccountDTO;
+import com.teste.rotinapagamento.dto.AvailableLimitDTO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -24,12 +27,14 @@ public class AccountRepository {
      * @return
      */
     public AccountDTO updateAccount(Integer accountId, Double availableCreditLimitAmount, Double availableWithdrawalLimitAmount) {
-        AccountDTO account = new AccountDTO(accountId, null, null);
+        AccountDTO account = new AccountDTO();
         String sql = "UPDATE public.accounts SET available_credit_limit=?, available_with_drawal_limit=? WHERE account_id=?;";
 
         try{
             account.setAccountId(accountId);
-            jdbcTemplate.queryForObject(sql, new Object[]{availableCreditLimitAmount, availableWithdrawalLimitAmount, accountId}, Integer.class);
+            account.setAvailableCreditLimit(new AvailableLimitDTO(availableCreditLimitAmount));
+            account.setAvailableWithdrawalLimit(new AvailableLimitDTO(availableWithdrawalLimitAmount));
+            jdbcTemplate.queryForObject(sql, new Object[]{availableCreditLimitAmount, availableWithdrawalLimitAmount, accountId}, );
         } catch (Exception e) {
             //TODO
         }

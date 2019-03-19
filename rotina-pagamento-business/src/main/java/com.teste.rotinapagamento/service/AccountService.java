@@ -25,6 +25,8 @@ public class AccountService {
      * @return AccountDTO
      */
     public AccountDTO updateAccount(Integer accountId, AccountDTO accountDTO) {
-        return accountRepository.updateAccount(accountId, accountDTO.getAvailableCreditLimit().getAmount().getAmount(), accountDTO.getAvailableWithdrawalLimit().getAmount().getAmount());
+        Double availableCreditLimitAmount = accountDTO.getAvailableCreditLimit() != null ? accountDTO.getAvailableCreditLimit().getAmount() : null;
+        Double availableWithdrawalLimitAmount = accountDTO.getAvailableWithdrawalLimit() != null ? accountDTO.getAvailableWithdrawalLimit().getAmount() : null;
+        return accountRepository.updateAccount(accountId, availableCreditLimitAmount, availableWithdrawalLimitAmount);
     }
 }

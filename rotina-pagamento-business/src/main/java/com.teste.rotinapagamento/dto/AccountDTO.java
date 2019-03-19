@@ -17,15 +17,6 @@ public class AccountDTO {
     @JsonProperty("available_withdrawal_limit")
     private AvailableLimitDTO availableWithdrawalLimit;
 
-    public AccountDTO() {
-    }
-
-    public AccountDTO(Integer accountId, AvailableLimitDTO availableCreditLimit, AvailableLimitDTO availableWithdrawalLimit) {
-        this.accountId = accountId;
-        this.availableCreditLimit = availableCreditLimit;
-        this.availableWithdrawalLimit = availableWithdrawalLimit;
-    }
-
     public Integer getAccountId() {
         return accountId;
     }
