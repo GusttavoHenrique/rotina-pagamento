@@ -1,4 +1,4 @@
-package com.teste.rotinapagamento.resource;
+package com.teste.rotinapagamento.resources;
 
 import com.teste.rotinapagamento.dto.TransactionDTO;
 import com.teste.rotinapagamento.service.TransactionService;
@@ -24,7 +24,7 @@ public class TransactionResource {
     TransactionService transactionService;
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity inserirHorarioFavorito(
+    public ResponseEntity insertTransaction(
             @RequestParam("account_id") Integer accountId,
             @RequestParam("operation_type_id") Integer operationTypeId,
             @RequestParam("amount") Double amount

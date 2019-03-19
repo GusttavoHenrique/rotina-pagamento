@@ -18,7 +18,7 @@ public class TransactionService {
     TransactionRepository transactionRepository;
 
     /**
-     * Delega a operação de inserção para o método insert da classe repository.
+     * Delega a operação de inserção de transações para o método insert da classe repository.
      *
      * @param accountId identificador da conta
      * @param operationTypeId identificador do tipo de operação
