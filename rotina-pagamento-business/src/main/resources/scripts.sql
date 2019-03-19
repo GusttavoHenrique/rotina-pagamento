@@ -63,3 +63,12 @@ CREATE TABLE public.transactions
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 )
+
+-----------------------------------------------------------------------------------------------
+
+-- Carregar tabela public.operations_types
+
+INSERT INTO public.operations_types(operation_type_id, description, charge_order) VALUES (1, 'COMPRA À VISTA', 2);
+INSERT INTO public.operations_types(operation_type_id, description, charge_order) VALUES (2, 'COMPRA PARCELADA', 1);
+INSERT INTO public.operations_types(operation_type_id, description, charge_order) VALUES (3, 'SAQUE', 0);
+INSERT INTO public.operations_types(operation_type_id, description, charge_order) VALUES (4, 'PAGAMENTO', 0);
