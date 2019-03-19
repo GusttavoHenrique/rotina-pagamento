@@ -1,1 +1,1 @@
-rotina-pagamento
+Projeto para simulação de rotinas de pagamentos de uma processadora de crédito.
