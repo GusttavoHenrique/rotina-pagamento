@@ -2,13 +2,14 @@ package com.teste.rotinapagamento.repository;
 
 import com.teste.rotinapagamento.dto.TransactionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -21,6 +22,34 @@ public class TransactionRepository {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
+    /**
+     * Busca na base de dados uma conta que corresponda ao identificador passado.
+     *
+     * @param transactionId identificador da transação
+     * @return TransactionDTO
+     */
+    public TransactionDTO findTransaction(Integer transactionId){
+        String sql = "SELECT * FROM public.transactions WHERE transaction_id=?";
+
+        return jdbcTemplate.query(sql, new Object[] {transactionId}, new ResultSetExtractor<TransactionDTO>() {
+            @Override
+            public TransactionDTO extractData(ResultSet resultSet) throws SQLException, DataAccessException {
+                if(resultSet.next()){
+                    TransactionDTO transaction = new TransactionDTO();
+                    transaction.setTransactionId(resultSet.getInt("transaction_id"));
+                    transaction.setAccountId(resultSet.getInt("account_id"));
+                    transaction.setOperationTypeId(resultSet.getInt("operation_type_id"));
+                    transaction.setAmount(resultSet.getDouble("amount"));
+                    transaction.setBalance(resultSet.getDouble("balance"));
+
+                    return transaction;
+                }
+
+                return null;
+            }
+        });
+    }
+
     public List<TransactionDTO> findTransactionsToDownPayment(Integer accountId) {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT t.transaction_id, t.account_id, t.operation_type_id, t.amount, t.balance ")
@@ -28,7 +57,7 @@ public class TransactionRepository {
                 .append("JOIN public.operations_types ot ON (ot.operation_type_id = t.operation_type_id) ")
                 .append("WHERE t.balance <> 0 ")
                 .append(" AND t.account_id=? ")
-                .append("ORDER BY ot.charge_order, t.event_date ");
+                .append("order by ot.charge_order ASC, t.event_date ASC ");
 
         try{
             return jdbcTemplate.query(sql.toString(), new Object[]{accountId}, new RowMapper<TransactionDTO>() {
@@ -56,24 +85,20 @@ public class TransactionRepository {
      * @param accountId       identificador da conta
      * @param operationTypeId identificador do tipo de operação
      * @param amount          valor devido
-     * @return TransactionDTO
+     * @return Integer
      */
-    public TransactionDTO insertTransaction(Integer accountId, Integer operationTypeId, Double amount) {
-        TransactionDTO transaction = new TransactionDTO();
-        String sql = "INSERT INTO public.transactions(transaction_id, account_id, operation_type_id, amount, balance, event_date, due_date) VALUES (?, ?, ?, ?, ?, ?, ?);";
+    public Integer insertTransaction(Integer accountId, Integer operationTypeId, Double amount, Double balance) {
+        Integer transactionId = null;
+        String sql = "INSERT INTO public.transactions(transaction_id, account_id, operation_type_id, amount, balance, event_date, due_date) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
 
         try {
-            transaction.setTransactionId(getNextTransactionId());
-            transaction.setAccountId(accountId);
-            transaction.setOperationTypeId(operationTypeId);
-            transaction.setAmount(amount);
-
-            jdbcTemplate.queryForObject(sql, new Object[]{transaction.getTransactionId(), accountId, operationTypeId, amount, amount, new Date(), new Date()}, Integer.class);
+            transactionId = getNextTransactionId();
+            jdbcTemplate.update(sql, new Object[]{transactionId, accountId, operationTypeId, amount, balance});
         } catch (Exception e) {
             //TODO
         }
 
-        return transaction;
+        return transactionId;
     }
 
     /**

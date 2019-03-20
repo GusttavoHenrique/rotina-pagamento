@@ -1,5 +1,6 @@
 package com.teste.rotinapagamento.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -11,9 +12,11 @@ public class AccountDTO {
     @JsonProperty("account_id")
     private Integer accountId;
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonProperty("available_credit_limit")
     private AvailableLimitDTO availableCreditLimit;
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     @JsonProperty("available_withdrawal_limit")
     private AvailableLimitDTO availableWithdrawalLimit;
 

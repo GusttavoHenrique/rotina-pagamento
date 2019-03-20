@@ -2,9 +2,11 @@ package com.teste.rotinapagamento.service;
 
 import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.TransactionDTO;
+import com.teste.rotinapagamento.exception.ResourceException;
 import com.teste.rotinapagamento.repository.AccountRepository;
 import com.teste.rotinapagamento.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,10 +37,11 @@ public class TransactionService {
     public TransactionDTO insertTransaction(TransactionDTO transaction) {
         if (transaction.getOperationTypeId() == OperationType.PAGAMENTO) return insertPayment(transaction);
 
-        transaction = transactionRepository.insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount());
+        Double balance = transaction.getAmount();
+        Integer transactionId = transactionRepository.insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount(), balance);
         accountRepository.downPayment(transaction, transaction.getAmount());
 
-        return transaction;
+        return transactionRepository.findTransaction(transactionId);
     }
 
     /**
@@ -47,7 +50,7 @@ public class TransactionService {
      * @param payments
      * @return List<TransactionDTO>
      */
-    public List<TransactionDTO> insertPayments(List<TransactionDTO> payments) {
+    public List<TransactionDTO> insertPayments(List<TransactionDTO> payments) throws ResourceException {
         List<TransactionDTO> transactions = new ArrayList<>();
         for (TransactionDTO payment : payments) {
             payment = insertPayment(payment);
@@ -63,24 +66,36 @@ public class TransactionService {
      * @param payment transaction referente a um pagamento
      * @return TransactionDTO
      */
-    private TransactionDTO insertPayment(TransactionDTO payment) {
-        Double saldo = downPayment(payment);
-        return transactionRepository.insertTransaction(payment.getAccountId(), OperationType.PAGAMENTO, saldo);
+    private TransactionDTO insertPayment(TransactionDTO payment) throws ResourceException {
+        if (payment.getAmount() <= 0) throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar um pagamento com o valor negativo.");
+
+        Double balance = downPayment(payment);
+        Integer transactionId = transactionRepository.insertTransaction(payment.getAccountId(), OperationType.PAGAMENTO, payment.getAmount(), balance);
+        accountRepository.downPayment(payment, Math.abs(balance));
+
+        return transactionRepository.findTransaction(transactionId);
     }
 
+    /**
+     * Realiza o abatimento do pagamento nas transações pendentes de pagamento.
+     *
+     * @param payment
+     * @return
+     * @throws ResourceException
+     */
     @Async
-    protected Double downPayment(TransactionDTO payment) {
+    protected Double downPayment(TransactionDTO payment) throws ResourceException {
         Double paymentBalance = payment.getAmount();
 
         List<TransactionDTO> transactions = transactionRepository.findTransactionsToDownPayment(payment.getAccountId());
         for (TransactionDTO transaction : transactions) {
-            if (paymentBalance <= 0) continue;
+            if(paymentBalance <= 0) continue;
 
             Double transactionBalance = transaction.getBalance();
-            accountRepository.downPayment(transaction, transactionBalance);
+            accountRepository.downPayment(transaction, Math.abs(transactionBalance));
 
             transactionBalance += paymentBalance;
-            transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), transactionBalance);
+            transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), transactionBalance > 0 ? 0 : transactionBalance);
 
             paymentBalance += transaction.getBalance();
         }

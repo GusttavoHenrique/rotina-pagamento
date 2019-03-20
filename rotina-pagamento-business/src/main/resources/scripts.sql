@@ -51,8 +51,8 @@ CREATE TABLE public.transactions
     operation_type_id integer NOT NULL,
     amount double precision NOT NULL,
     balance double precision NOT NULL,
-    event_date date NOT NULL,
-    due_date date NOT NULL,
+    event_date timestamp NOT NULL,
+    due_date timestamp NOT NULL,
     CONSTRAINT transaction_id_pk PRIMARY KEY (transaction_id),
     CONSTRAINT account_id_fk FOREIGN KEY (account_id)
         REFERENCES public.accounts (account_id) MATCH SIMPLE

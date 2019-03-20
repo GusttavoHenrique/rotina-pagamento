@@ -8,9 +8,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @since 18/03/19.
  */
 @SpringBootApplication
-public class RotinaPagamentoApplication {
+public class PaymentRoutineApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(RotinaPagamentoApplication.class, args);
+        SpringApplication.run(PaymentRoutineApplication.class, args);
     }
 }

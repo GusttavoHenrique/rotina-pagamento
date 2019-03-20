@@ -1,6 +1,7 @@
 package com.teste.rotinapagamento.resources;
 
 import com.teste.rotinapagamento.dto.TransactionDTO;
+import com.teste.rotinapagamento.exception.ResourceException;
 import com.teste.rotinapagamento.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -20,6 +21,11 @@ public class TransactionResource {
 
     @Autowired
     TransactionService transactionService;
+
+    @ExceptionHandler(ResourceException.class)
+    public ResponseEntity handleException(ResourceException e) {
+        return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
+    }
 
     @RequestMapping(value = "/transactions", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity insertTransaction(@RequestBody TransactionDTO transaction) {

@@ -6,9 +6,13 @@ import com.teste.rotinapagamento.dto.AvailableLimitDTO;
 
 import com.teste.rotinapagamento.dto.TransactionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +27,32 @@ public class AccountRepository {
     JdbcTemplate jdbcTemplate;
 
     /**
+     * Busca na base de dados uma conta que corresponda ao identificador passado.
+     *
+     * @param accountId identificador da conta
+     * @return AccountDTO
+     */
+    public AccountDTO findAccount(Integer accountId){
+        String sql = "SELECT * FROM public.accounts WHERE account_id=?";
+
+        return jdbcTemplate.query(sql, new Object[] {accountId}, new ResultSetExtractor<AccountDTO>() {
+            @Override
+            public AccountDTO extractData(ResultSet resultSet) throws SQLException, DataAccessException {
+                if(resultSet.next()){
+                    AccountDTO account = new AccountDTO();
+                    account.setAccountId(resultSet.getInt("account_id"));
+                    account.setAvailableCreditLimit(new AvailableLimitDTO(resultSet.getDouble("available_credit_limit")));
+                    account.setAvailableWithdrawalLimit(new AvailableLimitDTO(resultSet.getDouble("available_with_drawal_limit")));
+
+                    return account;
+                }
+
+                return null;
+            }
+        });
+    }
+
+    /**
      * Realiza o update de contas na base de dados.
      *
      * @param accountId                      identificador da conta
@@ -31,20 +61,19 @@ public class AccountRepository {
      * @return
      */
     public AccountDTO updateAccount(Integer accountId, Double availableCreditLimitAmount, Double availableWithdrawalLimitAmount) {
-        AccountDTO account = new AccountDTO();
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder();
 
         sql.append("UPDATE public.accounts ").append("SET ");
 
-        boolean creditLimitNotNull = availableCreditLimitAmount != null && availableCreditLimitAmount > 0;
+        boolean creditLimitNotNull = availableCreditLimitAmount != null;
         if (creditLimitNotNull){
-            sql.append("available_credit_limit=? ");
+            sql.append("available_credit_limit=available_credit_limit + ? ");
             params.add(availableCreditLimitAmount);
         }
 
-        if (availableWithdrawalLimitAmount != null && availableWithdrawalLimitAmount > 0){
-            sql.append(creditLimitNotNull ? "," : "").append(" available_with_drawal_limit=? ");
+        if (availableWithdrawalLimitAmount != null){
+            sql.append(creditLimitNotNull ? "," : "").append(" available_with_drawal_limit=available_with_drawal_limit + ? ");
             params.add(availableWithdrawalLimitAmount);
         }
 
@@ -52,15 +81,12 @@ public class AccountRepository {
         params.add(accountId);
 
         try {
-            account.setAccountId(accountId);
-            account.setAvailableCreditLimit(new AvailableLimitDTO(availableCreditLimitAmount));
-            account.setAvailableWithdrawalLimit(new AvailableLimitDTO(availableWithdrawalLimitAmount));
             jdbcTemplate.queryForObject(sql.toString(), params.toArray(), Integer.class);
         } catch (Exception e) {
             //TODO
         }
 
-        return account;
+        return findAccount(accountId);
     }
 
     /**
