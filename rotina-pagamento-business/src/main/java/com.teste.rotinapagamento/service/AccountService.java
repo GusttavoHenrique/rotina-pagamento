@@ -20,8 +20,8 @@ public class AccountService {
     /**
      * Delega a operação de atualização de contas para o método update da classe repository.
      *
-     * @param accountId
-     * @param accountDTO
+     * @param accountId  identificador da conta
+     * @param accountDTO DTO da conta
      * @return AccountDTO
      */
     public AccountDTO updateAccount(Integer accountId, AccountDTO accountDTO) {

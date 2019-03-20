@@ -7,31 +7,32 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * @author Gusttavo Henrique (gusttavohnssilva@gmail.com)
  * @since 19/03/19.
  */
 @RestController
-@RequestMapping("/transaction")
 public class TransactionResource {
 
     @Autowired
     TransactionService transactionService;
 
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity insertTransaction(
-            @RequestParam("account_id") Integer accountId,
-            @RequestParam("operation_type_id") Integer operationTypeId,
-            @RequestParam("amount") Double amount
-    ) {
-        TransactionDTO transaction = transactionService.insertTransaction(accountId, operationTypeId, amount);
-
+    @RequestMapping(value = "/transactions", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity insertTransaction(@RequestBody TransactionDTO transaction) {
+        transaction = transactionService.insertTransaction(transaction);
         return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(transaction);
+    }
+
+    @RequestMapping(value = "/payments", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity insertPayments(
+            @RequestBody List<TransactionDTO> payments
+    ) {
+        payments = transactionService.insertPayments(payments);
+        return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(payments);
     }
 
 

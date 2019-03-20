@@ -1,5 +1,6 @@
 package com.teste.rotinapagamento.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -19,6 +20,9 @@ public class TransactionDTO {
 
     @JsonProperty("amount")
     private Double amount;
+
+    @JsonIgnore
+    private Double balance;
 
     public Integer getTransactionId() {
         return transactionId;
@@ -50,5 +54,13 @@ public class TransactionDTO {
 
     public void setAmount(Double amount) {
         this.amount = amount;
+    }
+
+    public Double getBalance() {
+        return balance;
+    }
+
+    public void setBalance(Double balance) {
+        this.balance = balance;
     }
 }
