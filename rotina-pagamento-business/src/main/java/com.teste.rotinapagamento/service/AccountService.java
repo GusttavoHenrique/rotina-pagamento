@@ -1,5 +1,7 @@
 package com.teste.rotinapagamento.service;
 
+import java.util.List;
+
 import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,5 +30,14 @@ public class AccountService {
         Double availableCreditLimitAmount = accountDTO.getAvailableCreditLimit() != null ? accountDTO.getAvailableCreditLimit().getAmount() : null;
         Double availableWithdrawalLimitAmount = accountDTO.getAvailableWithdrawalLimit() != null ? accountDTO.getAvailableWithdrawalLimit().getAmount() : null;
         return accountRepository.updateAccount(accountId, availableCreditLimitAmount, availableWithdrawalLimitAmount);
+    }
+
+    /**
+     * Delega a operação de busca de contas para o método find da classe repository.
+     *
+     * @return List<AccountDTO>
+     */
+    public List<AccountDTO> getAccounts(){
+        return accountRepository.findAccounts();
     }
 }

@@ -1,5 +1,7 @@
 package com.teste.rotinapagamento.resources;
 
+import java.util.List;
+
 import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,13 @@ public class AccountResource {
         AccountDTO account = accountService.updateAccount(accountId, accountDTO);
 
         return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(account);
+    }
+
+    @RequestMapping(value = "/limits", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity listAccounts() {
+        List<AccountDTO> accounts = accountService.getAccounts();
+
+        return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(accounts);
     }
 
 }

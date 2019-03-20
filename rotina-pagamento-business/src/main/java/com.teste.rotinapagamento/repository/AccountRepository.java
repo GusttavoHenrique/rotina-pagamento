@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.ResultSet;
@@ -25,6 +26,27 @@ public class AccountRepository {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    /**
+     * Busca na base de dados todas as contas registradas com os limites de crédito e saque atualizados.
+     *
+     * @return List<AccountDTO>
+     */
+    public List<AccountDTO> findAccounts(){
+        String sql = "SELECT * FROM public.accounts";
+
+        return jdbcTemplate.query(sql, new RowMapper<AccountDTO>() {
+            @Override
+            public AccountDTO mapRow(ResultSet resultSet, int i) throws SQLException {
+                AccountDTO account = new AccountDTO();
+                account.setAccountId(resultSet.getInt("account_id"));
+                account.setAvailableCreditLimit(new AvailableLimitDTO(resultSet.getDouble("available_credit_limit")));
+                account.setAvailableWithdrawalLimit(new AvailableLimitDTO(resultSet.getDouble("available_with_drawal_limit")));
+
+                return account;
+            }
+        });
+    }
 
     /**
      * Busca na base de dados uma conta que corresponda ao identificador passado.

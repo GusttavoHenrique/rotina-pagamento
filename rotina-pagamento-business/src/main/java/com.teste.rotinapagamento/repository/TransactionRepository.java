@@ -1,5 +1,6 @@
 package com.teste.rotinapagamento.repository;
 
+import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.TransactionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -50,17 +51,24 @@ public class TransactionRepository {
         });
     }
 
+    /**
+     * Busca as transações que possuem balanços negativo para descontar pagamentos e positivos
+     * para utilização no pagamento de outras transações.
+     *
+     * @param accountId identificador da conta
+     * @return List<TransactionDTO>
+     */
     public List<TransactionDTO> findTransactionsToDownPayment(Integer accountId) {
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT t.transaction_id, t.account_id, t.operation_type_id, t.amount, t.balance ")
                 .append("FROM public.transactions t ")
                 .append("JOIN public.operations_types ot ON (ot.operation_type_id = t.operation_type_id) ")
-                .append("WHERE t.balance <> 0 ")
+                .append("WHERE (t.balance <> 0 or (ot.operation_type_id = ? and t.balance <> 0)) ")
                 .append(" AND t.account_id=? ")
                 .append("order by ot.charge_order ASC, t.event_date ASC ");
 
         try{
-            return jdbcTemplate.query(sql.toString(), new Object[]{accountId}, new RowMapper<TransactionDTO>() {
+            return jdbcTemplate.query(sql.toString(), new Object[]{OperationType.PAGAMENTO, accountId}, new RowMapper<TransactionDTO>() {
                 @Override
                 public TransactionDTO mapRow(ResultSet resultSet, int i) throws SQLException {
                     TransactionDTO transaction = new TransactionDTO();
