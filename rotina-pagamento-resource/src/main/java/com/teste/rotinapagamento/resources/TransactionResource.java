@@ -24,7 +24,7 @@ public class TransactionResource {
 
     @ExceptionHandler(ResourceException.class)
     public ResponseEntity handleException(ResourceException e) {
-        return ResponseEntity.status(e.getHttpStatus()).body(e.getMessage());
+        return ResponseEntity.status(e.getHttpStatus()).body(e.getError());
     }
 
     @RequestMapping(value = "/transactions", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)

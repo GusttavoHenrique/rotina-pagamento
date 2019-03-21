@@ -3,6 +3,7 @@ package com.teste.rotinapagamento.resources;
 import java.util.List;
 
 import com.teste.rotinapagamento.dto.AccountDTO;
+import com.teste.rotinapagamento.exception.ResourceException;
 import com.teste.rotinapagamento.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +22,11 @@ public class AccountResource {
 
     @Autowired
     AccountService accountService;
+
+    @ExceptionHandler(ResourceException.class)
+    public ResponseEntity handleException(ResourceException e) {
+        return ResponseEntity.status(e.getHttpStatus()).body(e.getError());
+    }
 
     @RequestMapping(value = "/{account_id}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity updateAccount(
