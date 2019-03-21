@@ -71,7 +71,6 @@ public class TransactionService {
 
         Double balance = downPayment(payment);
         Integer transactionId = transactionRepository.insertTransaction(payment.getAccountId(), OperationType.PAGAMENTO, payment.getAmount(), balance);
-        accountRepository.downPayment(payment, Math.abs(balance));
 
         return transactionRepository.findTransaction(transactionId);
     }
@@ -89,17 +88,16 @@ public class TransactionService {
 
         List<TransactionDTO> transactions = transactionRepository.findTransactionsToDownPayment(payment.getAccountId());
         for (TransactionDTO transaction : transactions) {
-            if(paymentBalance <= 0) continue;
+            if(paymentBalance <= 0) break;
 
             Double transactionBalance = transaction.getBalance();
-            accountRepository.downPayment(transaction, Math.abs(transactionBalance));
+            Double downValue = Math.abs(transactionBalance) >= Math.abs(paymentBalance) ? paymentBalance : Math.abs(transactionBalance);
+            accountRepository.downPayment(transaction, downValue);
+            transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), downValue);
 
-            transactionBalance += paymentBalance;
-            transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), transactionBalance > 0 ? 0 : transactionBalance);
-
-            paymentBalance += transaction.getBalance();
+            paymentBalance -= downValue;
         }
 
-        return (paymentBalance <= 0) ? 0.0 : paymentBalance;
+        return paymentBalance;
     }
 }

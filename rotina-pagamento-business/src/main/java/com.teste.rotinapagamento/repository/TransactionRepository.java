@@ -116,7 +116,7 @@ public class TransactionRepository {
      * @param balance
      */
     public void updateBalanceByTransaction(Integer transactionId, Double balance) {
-        String sql = "UPDATE public.transactions SET balance=? WHERE transaction_id=?;";
+        String sql = "UPDATE public.transactions SET balance=balance + ? WHERE transaction_id=?;";
 
         try {
             jdbcTemplate.update(sql, new Object[]{balance, transactionId});

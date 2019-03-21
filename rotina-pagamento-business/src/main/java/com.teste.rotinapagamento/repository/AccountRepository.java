@@ -41,7 +41,7 @@ public class AccountRepository {
                 AccountDTO account = new AccountDTO();
                 account.setAccountId(resultSet.getInt("account_id"));
                 account.setAvailableCreditLimit(new AvailableLimitDTO(resultSet.getDouble("available_credit_limit")));
-                account.setAvailableWithdrawalLimit(new AvailableLimitDTO(resultSet.getDouble("available_with_drawal_limit")));
+                account.setAvailableWithdrawalLimit(new AvailableLimitDTO(resultSet.getDouble("available_withdrawal_limit")));
 
                 return account;
             }
@@ -64,7 +64,7 @@ public class AccountRepository {
                     AccountDTO account = new AccountDTO();
                     account.setAccountId(resultSet.getInt("account_id"));
                     account.setAvailableCreditLimit(new AvailableLimitDTO(resultSet.getDouble("available_credit_limit")));
-                    account.setAvailableWithdrawalLimit(new AvailableLimitDTO(resultSet.getDouble("available_with_drawal_limit")));
+                    account.setAvailableWithdrawalLimit(new AvailableLimitDTO(resultSet.getDouble("available_withdrawal_limit")));
 
                     return account;
                 }
@@ -95,7 +95,7 @@ public class AccountRepository {
         }
 
         if (availableWithdrawalLimitAmount != null){
-            sql.append(creditLimitNotNull ? "," : "").append(" available_with_drawal_limit=available_with_drawal_limit + ? ");
+            sql.append(creditLimitNotNull ? "," : "").append(" available_withdrawal_limit=available_withdrawal_limit + ? ");
             params.add(availableWithdrawalLimitAmount);
         }
 

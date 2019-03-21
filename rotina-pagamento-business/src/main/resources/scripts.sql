@@ -6,7 +6,7 @@ CREATE TABLE public.accounts
 (
     account_id integer NOT NULL,
     available_credit_limit double precision NOT NULL,
-    available_with_drawal_limit double precision NOT NULL,
+    available_withdrawal_limit double precision NOT NULL,
     CONSTRAINT account_id_pk PRIMARY KEY (account_id)
 )
 
