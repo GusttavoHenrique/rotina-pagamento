@@ -2,8 +2,10 @@ package com.teste.rotinapagamento.repository;
 
 import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.TransactionDTO;
+import com.teste.rotinapagamento.exception.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
@@ -82,8 +84,7 @@ public class TransactionRepository {
                 }
             });
         } catch (Exception e) {
-            //TODO
-            return null;
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
         }
     }
 
@@ -103,7 +104,7 @@ public class TransactionRepository {
             transactionId = getNextTransactionId();
             jdbcTemplate.update(sql, new Object[]{transactionId, accountId, operationTypeId, amount, balance});
         } catch (Exception e) {
-            //TODO
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
         }
 
         return transactionId;
@@ -121,7 +122,7 @@ public class TransactionRepository {
         try {
             jdbcTemplate.update(sql, new Object[]{balance, transactionId});
         } catch (Exception e) {
-            //TODO
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
         }
     }
 
@@ -132,5 +133,20 @@ public class TransactionRepository {
      */
     private Integer getNextTransactionId() {
         return jdbcTemplate.queryForObject("SELECT NEXTVAL('public.transactions_seq');", Integer.class);
+    }
+
+    /**
+     * Indica se há credito credor na conta passada por parâmetro.
+     *
+     * @return boolean
+     */
+    public boolean hasCreditBalance(Integer accountId) {
+        String sql = "SELECT SUM(balance) > 0 FROM public.transactions WHERE account_id=? AND operation_type_id=? GROUP BY account_id;";
+
+        try {
+            return jdbcTemplate.queryForObject(sql, new Object[]{accountId, OperationType.PAGAMENTO}, Boolean.class);
+        } catch (Exception e) {
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+        }
     }
 }

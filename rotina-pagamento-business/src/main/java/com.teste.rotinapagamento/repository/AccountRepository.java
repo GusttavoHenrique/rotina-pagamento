@@ -5,8 +5,10 @@ import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.dto.AvailableLimitDTO;
 
 import com.teste.rotinapagamento.dto.TransactionDTO;
+import com.teste.rotinapagamento.exception.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
@@ -105,7 +107,7 @@ public class AccountRepository {
         try {
             jdbcTemplate.queryForObject(sql.toString(), params.toArray(), Integer.class);
         } catch (Exception e) {
-            //TODO
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
         }
 
         return findAccount(accountId);

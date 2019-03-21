@@ -103,7 +103,14 @@ public class TransactionService {
             if(paymentBalance <= 0) break;
 
             Double transactionBalance = transaction.getBalance();
-            Double downValue = Math.abs(transactionBalance) >= Math.abs(paymentBalance) ? paymentBalance : Math.abs(transactionBalance);
+            Double downValue = 0.0;
+            if(transactionBalance > 0) {
+                paymentBalance += transactionBalance;
+                downValue -= transactionBalance;
+            } else {
+                downValue = Math.abs(transactionBalance) >= Math.abs(paymentBalance) ? paymentBalance : Math.abs(transactionBalance);
+            }
+
             accountRepository.downPayment(transaction, downValue);
             transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), downValue);
 
@@ -126,10 +133,10 @@ public class TransactionService {
         if(account == null || account.getAccountId() <= 0)
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque a conta informada não existe.");
 
-        if(account.getAvailableCreditLimit().getAmount() <= transaction.getAmount())
+        if(account.getAvailableCreditLimit().getAmount() <= Math.abs(transaction.getAmount()))
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite de crédito suficiente.");
 
-        if(account.getAvailableWithdrawalLimit().getAmount() <= transaction.getAmount())
+        if(account.getAvailableWithdrawalLimit().getAmount() <= Math.abs(transaction.getAmount()))
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite suficiente para saque.");
     }
 
@@ -141,6 +148,13 @@ public class TransactionService {
     private void paymentValidate(TransactionDTO payment) {
         if (payment.getAmount() <= 0)
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar um pagamento com o valor nulo ou negativo.");
+
+        AccountDTO account = accountRepository.findAccount(payment.getAccountId());
+        if(account == null || account.getAccountId() <= 0)
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque a conta informada não existe.");
+
+        if(transactionRepository.hasCreditBalance(payment.getAccountId()))
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar um pagamento porque não há contas a pagar.");
     }
 
 }
