@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -45,6 +46,12 @@ public class TransactionRepository {
                     transaction.setAmount(resultSet.getDouble("amount"));
                     transaction.setBalance(resultSet.getDouble("balance"));
 
+                    if(resultSet.getDate("event_date") != null)
+                        transaction.setEventDate(resultSet.getDate("event_date").getTime());
+
+                    if(resultSet.getDate("due_date") != null)
+                        transaction.setDueDate(resultSet.getDate("due_date").getTime());
+
                     return transaction;
                 }
 
@@ -75,9 +82,6 @@ public class TransactionRepository {
                 public TransactionDTO mapRow(ResultSet resultSet, int i) throws SQLException {
                     TransactionDTO transaction = new TransactionDTO();
                     transaction.setTransactionId(resultSet.getInt("transaction_id"));
-                    transaction.setAccountId(resultSet.getInt("account_id"));
-                    transaction.setOperationTypeId(resultSet.getInt("operation_type_id"));
-                    transaction.setAmount(resultSet.getDouble("amount"));
                     transaction.setBalance(resultSet.getDouble("balance"));
 
                     return transaction;
@@ -96,13 +100,13 @@ public class TransactionRepository {
      * @param amount          valor devido
      * @return Integer
      */
-    public Integer insertTransaction(Integer accountId, Integer operationTypeId, Double amount, Double balance) {
-        Integer transactionId = null;
-        String sql = "INSERT INTO public.transactions(transaction_id, account_id, operation_type_id, amount, balance, event_date, due_date) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);";
+    public Integer insertTransaction(Integer accountId, Integer operationTypeId, Double amount, Double balance, Date dueDate) {
+        Integer transactionId;
+        String sql = "INSERT INTO public.transactions(transaction_id, account_id, operation_type_id, amount, balance, event_date, due_date) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?);";
 
         try {
             transactionId = getNextTransactionId();
-            jdbcTemplate.update(sql, new Object[]{transactionId, accountId, operationTypeId, amount, balance});
+            jdbcTemplate.update(sql, new Object[]{transactionId, accountId, operationTypeId, amount, balance, dueDate});
         } catch (Exception e) {
             throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
         }

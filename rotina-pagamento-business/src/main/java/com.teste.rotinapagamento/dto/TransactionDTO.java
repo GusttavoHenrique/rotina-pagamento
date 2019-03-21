@@ -1,6 +1,5 @@
 package com.teste.rotinapagamento.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -21,8 +20,14 @@ public class TransactionDTO {
     @JsonProperty("amount")
     private Double amount;
 
-    @JsonIgnore
+    @JsonProperty("balance")
     private Double balance;
+
+    @JsonProperty("event_date")
+    private Long eventDate;
+
+    @JsonProperty("due_date")
+    private Long dueDate;
 
     public Integer getTransactionId() {
         return transactionId;
@@ -62,5 +67,21 @@ public class TransactionDTO {
 
     public void setBalance(Double balance) {
         this.balance = balance;
+    }
+
+    public Long getEventDate() {
+        return eventDate;
+    }
+
+    public void setEventDate(Long eventDate) {
+        this.eventDate = eventDate;
+    }
+
+    public Long getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(Long dueDate) {
+        this.dueDate = dueDate;
     }
 }

@@ -1,3 +1,19 @@
+-----------------------------------------------------------------------------------------------
+
+-- SEQUENCE: public.accounts_seq
+
+-- DROP SEQUENCE public.accounts_seq;
+
+CREATE SEQUENCE public.accounts_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 99999999999999
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-----------------------------------------------------------------------------------------------
+
 -- Table: public.accounts
 
 -- DROP TABLE public.accounts;
@@ -5,8 +21,8 @@
 CREATE TABLE public.accounts
 (
     account_id integer NOT NULL,
-    available_credit_limit double precision NOT NULL,
-    available_withdrawal_limit double precision NOT NULL,
+    available_credit_limit double precision DEFAULT 0,
+    available_withdrawal_limit double precision DEFAULT 0,
     CONSTRAINT account_id_pk PRIMARY KEY (account_id)
 )
 
@@ -52,7 +68,7 @@ CREATE TABLE public.transactions
     amount double precision NOT NULL,
     balance double precision NOT NULL,
     event_date timestamp NOT NULL,
-    due_date timestamp NOT NULL,
+    due_date timestamp,
     CONSTRAINT transaction_id_pk PRIMARY KEY (transaction_id),
     CONSTRAINT account_id_fk FOREIGN KEY (account_id)
         REFERENCES public.accounts (account_id) MATCH SIMPLE

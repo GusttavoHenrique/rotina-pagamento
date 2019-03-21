@@ -105,7 +105,7 @@ public class AccountRepository {
         params.add(accountId);
 
         try {
-            jdbcTemplate.queryForObject(sql.toString(), params.toArray(), Integer.class);
+            jdbcTemplate.update(sql.toString(), params.toArray());
         } catch (Exception e) {
             throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
         }
@@ -120,10 +120,38 @@ public class AccountRepository {
      */
     public void downPayment(TransactionDTO transaction, Double amount) {
         Integer accountId = transaction.getAccountId();
-        if (transaction.getOperationTypeId() == OperationType.SAQUE) {
+        if (transaction.getOperationTypeId() == OperationType.SAQUE.getId()) {
             updateAccount(accountId, null, amount);
         } else {
             updateAccount(accountId, amount, null);
         }
+    }
+
+    /**
+     * Insere uma conta na base de dados.
+     *
+     * @return
+     */
+    public AccountDTO insertAccount(Double availableCreditLimit, Double availableWithdrawalLimit) {
+        Integer accountId;
+        String sql = "INSERT INTO public.accounts(account_id, available_credit_limit, available_withdrawal_limit) VALUES (?, ?, ?);";
+
+        try {
+            accountId = getNextAccountId();
+            jdbcTemplate.update(sql, new Object[]{accountId, availableCreditLimit, availableWithdrawalLimit});
+        } catch (Exception e) {
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+        }
+
+        return findAccount(accountId);
+    }
+
+    /**
+     * Captura o próximo indentificador disponível na tabela accounts.
+     *
+     * @return Integer
+     */
+    private Integer getNextAccountId() {
+        return jdbcTemplate.queryForObject("SELECT NEXTVAL('public.accounts_seq');", Integer.class);
     }
 }

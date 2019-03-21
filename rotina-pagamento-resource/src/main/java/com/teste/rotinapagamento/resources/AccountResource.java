@@ -28,6 +28,13 @@ public class AccountResource {
         return ResponseEntity.status(e.getHttpStatus()).body(e.getError());
     }
 
+    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity insertAccount(@RequestBody AccountDTO accountDTO) {
+        AccountDTO account = accountService.insertAccount(accountDTO);
+
+        return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(account);
+    }
+
     @RequestMapping(value = "/{account_id}", method = RequestMethod.PATCH, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity updateAccount(
             @PathVariable("account_id") Integer accountId,
@@ -39,7 +46,7 @@ public class AccountResource {
     }
 
     @RequestMapping(value = "/limits", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity listAccounts() {
+    public ResponseEntity listLimits() {
         List<AccountDTO> accounts = accountService.getAccounts();
 
         return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(accounts);
