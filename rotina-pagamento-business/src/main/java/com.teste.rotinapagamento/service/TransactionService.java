@@ -42,22 +42,26 @@ public class TransactionService {
 			return insertPayment(transaction);
 
 		transactionValidate(transaction);
-		return insertCreditPurchaseOrWithdrawal(transaction);
+		Double newTransactionBalance = downCreditBalance(transaction);
+		transaction.setBalance(newTransactionBalance);
+
+		transaction = insertCreditPurchaseOrWithdrawal(transaction);
+		return transaction;
 	}
 
 	/**
 	 * Delega a inserção de transações de compras ou saque para o método insert da classe repository.
 	 *
-	 * @param transaction
-	 * @return
+	 * @param transaction transação de compra ou saque
+	 * @return TransactionDTO
 	 */
 	private TransactionDTO insertCreditPurchaseOrWithdrawal(TransactionDTO transaction) {
 		Double balance = transaction.getAmount();
 		Date dueDate = transaction.getDueDate() != null ? new Date(transaction.getDueDate()) : null;
 		Integer transactionId = transactionRepository.insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount(), balance, dueDate);
-		accountRepository.downPayment(transaction, transaction.getAmount());
+		accountRepository.updateLimitAccount(transaction, transaction.getBalance());
 
-		return transactionRepository.findTransaction(transactionId);
+		return transactionRepository.findTransaction(transactionId, null, null);
 	}
 
 	/**
@@ -69,16 +73,16 @@ public class TransactionService {
 	private TransactionDTO insertPayment(TransactionDTO payment) throws ResourceException {
 		paymentValidate(payment);
 
-		Double balance = downPayment(payment);
+		Double balance = downPaymentInTransactions(payment);
 		Integer transactionId = transactionRepository.insertTransaction(payment.getAccountId(), OperationType.PAGAMENTO.getId(), payment.getAmount(), balance, null);
 
-		return transactionRepository.findTransaction(transactionId);
+		return transactionRepository.findTransaction(transactionId, null, null);
 	}
 
 	/**
 	 * Delega a inserção de cada um dos pagamentos da listagem recebida para o insert da classe repository.
 	 *
-	 * @param payments
+	 * @param payments transações de pagamento
 	 * @return List<TransactionDTO>
 	 */
 	public List<TransactionDTO> insertPayments(List<TransactionDTO> payments) throws ResourceException {
@@ -94,35 +98,80 @@ public class TransactionService {
 	/**
 	 * Realiza o abatimento do pagamento nas transações pendentes de pagamento.
 	 *
-	 * @param payment
-	 * @return
+	 * @param payment transação de pagamento
+	 * @return Double
 	 * @throws ResourceException
 	 */
-	@Async
-	protected Double downPayment(TransactionDTO payment) throws ResourceException {
+	private Double downPaymentInTransactions(TransactionDTO payment) throws ResourceException {
 		Double paymentBalance = payment.getAmount();
 
 		List<TransactionDTO> transactions = transactionRepository.findTransactionsToDownPayment(payment.getAccountId());
 		for (TransactionDTO transaction : transactions) {
 			if (paymentBalance <= 0) break;
 
-			Double transactionBalance = transaction.getBalance();
-			Double downValue = 0.0;
-			if (transactionBalance > 0) {
-				paymentBalance += transactionBalance;
-				downValue -= transactionBalance;
-			}
-			else {
-				downValue = Math.abs(transactionBalance) >= Math.abs(paymentBalance) ? paymentBalance : Math.abs(transactionBalance);
-			}
-
-			accountRepository.downPayment(transaction, downValue);
-			transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), downValue);
-
-			paymentBalance -= downValue;
+			paymentBalance = downPaymentInTransactionBalance(transaction, paymentBalance);
 		}
 
 		return paymentBalance;
+	}
+
+	/**
+	 * Realiza o abatimento do pagamento em uma transação pendente de pagamento.
+	 *
+	 * @param transaction transação que terá valor descontado
+	 * @param paymentBalance valor do pagamento
+	 * @return Double
+	 */
+	@Async
+	protected Double downPaymentInTransactionBalance(TransactionDTO transaction, Double paymentBalance) {
+		Double transactionBalance = transaction.getBalance();
+		Double downValue = 0.0;
+		if (transactionBalance > 0) {
+			paymentBalance += transactionBalance;
+			downValue -= transactionBalance;
+		} else {
+			downValue = Math.abs(transactionBalance) >= Math.abs(paymentBalance) ? paymentBalance : Math.abs(transactionBalance);
+		}
+
+		transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), downValue);
+		accountRepository.updateLimitAccount(transaction, downValue);
+
+		paymentBalance -= downValue;
+
+		return paymentBalance;
+	}
+
+	/**
+	 * Abate o saldo credor na trasação de compra ou saque em execução.
+	 *
+	 * @param transaction transação que terá valor descontado pelo saldo credor
+	 * @return Double
+	 */
+	private Double downCreditBalance(TransactionDTO transaction) {
+		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId());
+		Double newTransactionBalance = downTransactionBalanceInCreditBalance(transactionWithCreditBalance, transaction.getBalance());
+
+		return newTransactionBalance;
+	}
+
+	/**
+	 * Abate o balance da trasação no saldo credor da conta.
+	 *
+	 * @param transactionWithCreditBalance transação com o saldo credor da conta
+	 * @param transactionBalance transação que terá o valor descontado
+	 * @return Double
+	 */
+	@Async
+	protected Double downTransactionBalanceInCreditBalance(TransactionDTO transactionWithCreditBalance, Double transactionBalance) {
+		Double creditBalance = transactionWithCreditBalance.getBalance();
+		Double downValue = Math.abs(transactionBalance) >= Math.abs(creditBalance) ? creditBalance : Math.abs(transactionBalance);
+
+		transactionRepository.updateBalanceByTransaction(transactionWithCreditBalance.getTransactionId(), downValue);
+		accountRepository.updateLimitAccount(transactionWithCreditBalance, downValue);
+
+		transactionBalance += downValue;
+
+		return transactionBalance;
 	}
 
 	/**

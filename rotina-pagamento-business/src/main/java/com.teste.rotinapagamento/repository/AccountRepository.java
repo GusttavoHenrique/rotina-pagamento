@@ -118,7 +118,7 @@ public class AccountRepository {
      *
      * @param transaction
      */
-    public void downPayment(TransactionDTO transaction, Double amount) {
+    public void updateLimitAccount(TransactionDTO transaction, Double amount) {
         Integer accountId = transaction.getAccountId();
         if (transaction.getOperationTypeId() == OperationType.SAQUE.getId()) {
             updateAccount(accountId, null, amount);

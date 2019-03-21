@@ -32,10 +32,22 @@ public class TransactionRepository {
      * @param transactionId identificador da transação
      * @return TransactionDTO
      */
-    public TransactionDTO findTransaction(Integer transactionId){
-        String sql = "SELECT * FROM public.transactions WHERE transaction_id=?";
+    public TransactionDTO findTransaction(Integer transactionId, Integer accountId, Integer operationTypeId){
+        StringBuilder sql = new StringBuilder("SELECT * FROM public.transactions WHERE 1=1 ");
 
-        return jdbcTemplate.query(sql, new Object[] {transactionId}, new ResultSetExtractor<TransactionDTO>() {
+        if(transactionId != null){
+        	sql.append(" AND transaction_id=?");
+        }
+
+	    if(accountId != null){
+		    sql.append(" AND account_id=?");
+	    }
+
+	    if(operationTypeId != null){
+		    sql.append(" AND operation_type_id=?");
+	    }
+
+        return jdbcTemplate.query(sql.toString(), new Object[] {transactionId}, new ResultSetExtractor<TransactionDTO>() {
             @Override
             public TransactionDTO extractData(ResultSet resultSet) throws SQLException, DataAccessException {
                 if(resultSet.next()){
