@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.teste.rotinapagamento.auxiliar.SourceMessage;
 import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.dto.AvailableLimitDTO;
 import com.teste.rotinapagamento.exception.ResourceException;
@@ -23,6 +24,9 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class AccountRepository {
+
+	@Autowired
+	SourceMessage sourceMessage;
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -112,7 +116,7 @@ public class AccountRepository {
         try {
             jdbcTemplate.update(sql.toString(), params.toArray());
         } catch (Exception e) {
-            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));
         }
 
 		return findAccount(accountId);
@@ -131,7 +135,7 @@ public class AccountRepository {
             accountId = getNextAccountId();
             jdbcTemplate.update(sql, new Object[]{accountId, availableCreditLimit, availableWithdrawalLimit});
         } catch (Exception e) {
-            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));
         }
 
 		return findAccount(accountId);

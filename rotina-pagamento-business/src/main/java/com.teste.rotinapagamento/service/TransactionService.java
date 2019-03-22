@@ -4,6 +4,7 @@ import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.teste.rotinapagamento.auxiliar.SourceMessage;
 import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.dto.TransactionDTO;
@@ -23,6 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class TransactionService {
+
+	@Autowired
+	SourceMessage sourceMessage;
 
 	@Autowired
 	TransactionRepository transactionRepository;
@@ -185,19 +189,19 @@ public class TransactionService {
 	 */
 	private void transactionValidate(TransactionDTO transaction) {
 		if (transaction.getAmount() >= 0)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar cadastro de compras ou saques com valores nulos ou positivos.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.cadastro.valor.nulo"));
 
 		AccountDTO account = accountService.getAccount(transaction.getAccountId());
 		if (account == null || account.getAccountId() <= 0)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque a conta informada não existe.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.conta.inexistente"));
 
 		Double totalCredit = getTotalCredit(account.getAccountId(), account.getAvailableCreditLimit().getAmount());
 		if (OperationType.isCompra(transaction.getOperationTypeId()) && totalCredit < Math.abs(transaction.getAmount()))
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite de crédito suficiente.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.limite.credito.insuficiente"));
 
 		totalCredit = getTotalCredit(account.getAccountId(), account.getAvailableWithdrawalLimit().getAmount());
 		if (OperationType.isSaque(transaction.getOperationTypeId()) && totalCredit < Math.abs(transaction.getAmount()))
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite suficiente para saque.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.limite.saque.insuficiente"));
 	}
 
 	/**
@@ -223,19 +227,19 @@ public class TransactionService {
 	 */
 	private void paymentValidate(TransactionDTO payment) {
 		if (payment.getAmount() <= 0)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar um pagamento com o valor nulo ou negativo.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.pagamento.nulo"));
 
 		AccountDTO account = accountService.getAccount(payment.getAccountId());
 		if (account == null || account.getAccountId() <= 0)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque a conta informada não existe.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 
 		boolean hasNegativeBalance = transactionRepository.hasBalanceByOperation(payment.getAccountId(), OperationType.getNegativeOperations());
 		if (!hasNegativeBalance)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar um pagamento porque não há contas a pagar.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.pagamento.desnecessaria"));
 
 		boolean hasPositiveBalance = transactionRepository.hasBalanceByOperation(payment.getAccountId(), OperationType.getPositiveOperations());
 		if (hasPositiveBalance)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar este pagamento porque há um saldo credor.");
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.saldo.credor.existente"));
 	}
 
 }

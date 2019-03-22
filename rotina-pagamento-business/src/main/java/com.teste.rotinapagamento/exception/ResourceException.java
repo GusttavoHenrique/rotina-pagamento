@@ -2,6 +2,7 @@ package com.teste.rotinapagamento.exception;
 
 import com.teste.rotinapagamento.auxiliar.ErrorMessage;
 import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
 
 /**
  * @author Gusttavo Henrique (gusttavohnssilva@gmail.com)
@@ -13,14 +14,14 @@ public class ResourceException extends RuntimeException {
 
 	private ErrorMessage error;
 
-	public HttpStatus getHttpStatus() {
-		return httpStatus;
-	}
-
 	public ResourceException(HttpStatus httpStatus, String message) {
 		super(message);
 		this.httpStatus = httpStatus;
 		this.error = new ErrorMessage(httpStatus.value(), httpStatus.getReasonPhrase(), message);
+	}
+
+	public HttpStatus getHttpStatus() {
+		return httpStatus;
 	}
 
 	public ErrorMessage getError(){

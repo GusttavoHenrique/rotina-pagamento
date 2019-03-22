@@ -2,6 +2,7 @@ package com.teste.rotinapagamento.service;
 
 import java.util.List;
 
+import com.teste.rotinapagamento.auxiliar.SourceMessage;
 import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.dto.TransactionDTO;
@@ -21,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountService {
 
     @Autowired
+    SourceMessage sourceMessage;
+
+    @Autowired
     AccountRepository accountRepository;
 
     /**
@@ -31,7 +35,7 @@ public class AccountService {
      */
     public AccountDTO insertAccount(AccountDTO account) {
         if(account.getAvailableCreditLimit() == null && account.getAvailableWithdrawalLimit() == null)
-            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "É necessário informar o(s) limite(s) de crédito e/ou saque.");
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.nao.informado"));
 
         Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : null;
         Double availableWithdrawalLimitAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : null;
@@ -47,7 +51,7 @@ public class AccountService {
      */
     public AccountDTO updateAccount(Integer accountId, AccountDTO account) {
         if(accountRepository.findAccount(accountId) == null)
-            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Esta conta não existe! Não será possível atualizar os dados desta conta.");
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 
         Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : null;
         Double availableWithdrawalLimitAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : null;

@@ -1,5 +1,6 @@
 package com.teste.rotinapagamento.repository;
 
+import com.teste.rotinapagamento.auxiliar.SourceMessage;
 import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.TransactionDTO;
 import com.teste.rotinapagamento.exception.ResourceException;
@@ -25,6 +26,9 @@ import java.util.stream.Collectors;
  */
 @Repository
 public class TransactionRepository {
+
+    @Autowired
+    SourceMessage sourceMessage;
 
     @Autowired
     JdbcTemplate jdbcTemplate;
@@ -114,7 +118,7 @@ public class TransactionRepository {
                 }
             });
         } catch (Exception e) {
-            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));
         }
     }
 
@@ -134,7 +138,7 @@ public class TransactionRepository {
             transactionId = getNextTransactionId();
             jdbcTemplate.update(sql, new Object[]{transactionId, accountId, operationTypeId, amount, balance, dueDate});
         } catch (Exception e) {
-            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));
         }
 
         return transactionId;
@@ -152,7 +156,7 @@ public class TransactionRepository {
         try {
             jdbcTemplate.update(sql, new Object[]{balance, transactionId});
         } catch (Exception e) {
-            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));
         }
     }
 
@@ -187,7 +191,7 @@ public class TransactionRepository {
         } catch (EmptyResultDataAccessException e1){
             return false;
         } catch (Exception e) {
-            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));
         }
     }
 }
