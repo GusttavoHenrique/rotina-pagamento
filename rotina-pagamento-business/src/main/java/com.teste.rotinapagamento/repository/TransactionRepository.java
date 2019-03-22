@@ -5,6 +5,7 @@ import com.teste.rotinapagamento.dto.TransactionDTO;
 import com.teste.rotinapagamento.exception.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
@@ -14,7 +15,9 @@ import org.springframework.stereotype.Repository;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Gusttavo Henrique (gusttavohnssilva@gmail.com)
@@ -33,21 +36,25 @@ public class TransactionRepository {
      * @return TransactionDTO
      */
     public TransactionDTO findTransaction(Integer transactionId, Integer accountId, Integer operationTypeId){
+        List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM public.transactions WHERE 1=1 ");
 
         if(transactionId != null){
         	sql.append(" AND transaction_id=?");
+        	params.add(transactionId);
         }
 
 	    if(accountId != null){
 		    sql.append(" AND account_id=?");
+		    params.add(accountId);
 	    }
 
 	    if(operationTypeId != null){
 		    sql.append(" AND operation_type_id=?");
+		    params.add(operationTypeId);
 	    }
 
-        return jdbcTemplate.query(sql.toString(), new Object[] {transactionId}, new ResultSetExtractor<TransactionDTO>() {
+        return jdbcTemplate.query(sql.toString(), params.toArray(), new ResultSetExtractor<TransactionDTO>() {
             @Override
             public TransactionDTO extractData(ResultSet resultSet) throws SQLException, DataAccessException {
                 if(resultSet.next()){
@@ -89,12 +96,15 @@ public class TransactionRepository {
                 .append("order by ot.charge_order ASC, t.event_date ASC ");
 
         try{
-            return jdbcTemplate.query(sql.toString(), new Object[]{OperationType.PAGAMENTO, accountId}, new RowMapper<TransactionDTO>() {
+            return jdbcTemplate.query(sql.toString(), new Object[]{OperationType.PAGAMENTO.getId(), accountId}, new RowMapper<TransactionDTO>() {
                 @Override
                 public TransactionDTO mapRow(ResultSet resultSet, int i) throws SQLException {
                     TransactionDTO transaction = new TransactionDTO();
                     transaction.setTransactionId(resultSet.getInt("transaction_id"));
+                    transaction.setAccountId(resultSet.getInt("account_id"));
                     transaction.setBalance(resultSet.getDouble("balance"));
+                    transaction.setAmount(resultSet.getDouble("amount"));
+                    transaction.setOperationTypeId(resultSet.getInt("operation_type_id"));
 
                     return transaction;
                 }
@@ -152,15 +162,26 @@ public class TransactionRepository {
     }
 
     /**
-     * Indica se há credito credor na conta passada por parâmetro.
+     * Indica se há saldo (positivo ou negativo) na conta passada por parâmetro.
      *
      * @return boolean
      */
-    public boolean hasCreditBalance(Integer accountId) {
-        String sql = "SELECT SUM(balance) > 0 FROM public.transactions WHERE account_id=? AND operation_type_id=? GROUP BY account_id;";
+    public boolean hasBalanceByOperation(Integer accountId, List<Object> operations) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT ABS(SUM(balance)) > 0 ")
+                .append("FROM public.transactions ")
+                .append("WHERE account_id=? ")
+                .append("AND operation_type_id IN (")
+                .append(operations.stream()
+                        .map(n -> n.toString())
+                        .collect(Collectors.joining( "," )))
+                .append(") ")
+                .append("GROUP BY account_id LIMIT 1;");
 
         try {
-            return jdbcTemplate.queryForObject(sql, new Object[]{accountId, OperationType.PAGAMENTO}, Boolean.class);
+            return jdbcTemplate.queryForObject(sql.toString(), new Object[]{accountId}, Boolean.class);
+        } catch (EmptyResultDataAccessException e1){
+            return false;
         } catch (Exception e) {
             throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, "Ocorreu um erro inesperado!");
         }

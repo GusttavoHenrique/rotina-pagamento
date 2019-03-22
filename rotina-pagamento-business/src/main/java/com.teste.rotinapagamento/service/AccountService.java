@@ -2,7 +2,9 @@ package com.teste.rotinapagamento.service;
 
 import java.util.List;
 
+import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.AccountDTO;
+import com.teste.rotinapagamento.dto.TransactionDTO;
 import com.teste.rotinapagamento.exception.ResourceException;
 import com.teste.rotinapagamento.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,11 +46,37 @@ public class AccountService {
      * @return AccountDTO
      */
     public AccountDTO updateAccount(Integer accountId, AccountDTO account) {
-        if(accountRepository.findAccount(accountId) != null)
+        if(accountRepository.findAccount(accountId) == null)
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Esta conta não existe! Não será possível atualizar os dados desta conta.");
 
         Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : null;
         Double availableWithdrawalLimitAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : null;
+        return updateAccount(accountId, availableCreditLimitAmount, availableWithdrawalLimitAmount);
+    }
+
+    /**
+     * Abate o valor do pagamento no limite de crédito ou de retirada da conta.
+     *
+     * @param transaction transação corrente
+     */
+    public void updateLimitAccount(TransactionDTO transaction, Double amount) {
+        Integer accountId = transaction.getAccountId();
+        if (transaction.getOperationTypeId() == OperationType.SAQUE.getId()) {
+            updateAccount(accountId, null, amount);
+        } else {
+            updateAccount(accountId, amount, null);
+        }
+    }
+
+    /**
+     * Delega a operação de update de contas para o método update da classe repository.
+     *
+     * @param accountId                      identificador da conta
+     * @param availableCreditLimitAmount     limite de crédito disponível
+     * @param availableWithdrawalLimitAmount limite de retirada disponível
+     * @return AccountDTO
+     */
+    private AccountDTO updateAccount(Integer accountId, Double availableCreditLimitAmount, Double availableWithdrawalLimitAmount){
         return accountRepository.updateAccount(accountId, availableCreditLimitAmount, availableWithdrawalLimitAmount);
     }
 
@@ -61,4 +89,13 @@ public class AccountService {
         return accountRepository.findAccounts();
     }
 
+    /**
+     * Delega a operação de busca de uma conta para o método find da classe repository.
+     *
+     * @param accountId identificador da conta
+     * @return AccountDTO
+     */
+    public AccountDTO getAccount(Integer accountId) {
+        return accountRepository.findAccount(accountId);
+    }
 }

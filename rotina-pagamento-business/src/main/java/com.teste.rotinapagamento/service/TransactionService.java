@@ -8,7 +8,6 @@ import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.dto.TransactionDTO;
 import com.teste.rotinapagamento.exception.ResourceException;
-import com.teste.rotinapagamento.repository.AccountRepository;
 import com.teste.rotinapagamento.repository.TransactionRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +28,7 @@ public class TransactionService {
 	TransactionRepository transactionRepository;
 
 	@Autowired
-	AccountRepository accountRepository;
+	AccountService accountService;
 
 	/**
 	 * Delega a inserção de transações para o método insert da classe repository.
@@ -38,12 +37,14 @@ public class TransactionService {
 	 * @return TransactionDTO
 	 */
 	public TransactionDTO insertTransaction(TransactionDTO transaction) {
-		if (transaction.getOperationTypeId() == OperationType.PAGAMENTO.getId())
-			return insertPayment(transaction);
+		if (transaction.getOperationTypeId() == OperationType.PAGAMENTO.getId()) return insertPayment(transaction);
 
 		transactionValidate(transaction);
+
 		Double newTransactionBalance = downCreditBalance(transaction);
-		transaction.setBalance(newTransactionBalance);
+		if(newTransactionBalance != null){
+			transaction.setBalance(newTransactionBalance);
+		}
 
 		transaction = insertCreditPurchaseOrWithdrawal(transaction);
 		return transaction;
@@ -59,7 +60,7 @@ public class TransactionService {
 		Double balance = transaction.getAmount();
 		Date dueDate = transaction.getDueDate() != null ? new Date(transaction.getDueDate()) : null;
 		Integer transactionId = transactionRepository.insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount(), balance, dueDate);
-		accountRepository.updateLimitAccount(transaction, transaction.getBalance());
+		accountService.updateLimitAccount(transaction, balance);
 
 		return transactionRepository.findTransaction(transactionId, null, null);
 	}
@@ -134,7 +135,7 @@ public class TransactionService {
 		}
 
 		transactionRepository.updateBalanceByTransaction(transaction.getTransactionId(), downValue);
-		accountRepository.updateLimitAccount(transaction, downValue);
+		accountService.updateLimitAccount(transaction, downValue);
 
 		paymentBalance -= downValue;
 
@@ -149,8 +150,11 @@ public class TransactionService {
 	 */
 	private Double downCreditBalance(TransactionDTO transaction) {
 		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId());
-		Double newTransactionBalance = downTransactionBalanceInCreditBalance(transactionWithCreditBalance, transaction.getBalance());
 
+		if(transactionWithCreditBalance == null) return null;
+
+		Double transactionBalance = transaction.getAmount();
+		Double newTransactionBalance = downTransactionBalanceInCreditBalance(transactionWithCreditBalance, transactionBalance);
 		return newTransactionBalance;
 	}
 
@@ -166,8 +170,8 @@ public class TransactionService {
 		Double creditBalance = transactionWithCreditBalance.getBalance();
 		Double downValue = Math.abs(transactionBalance) >= Math.abs(creditBalance) ? creditBalance : Math.abs(transactionBalance);
 
-		transactionRepository.updateBalanceByTransaction(transactionWithCreditBalance.getTransactionId(), downValue);
-		accountRepository.updateLimitAccount(transactionWithCreditBalance, downValue);
+		transactionRepository.updateBalanceByTransaction(transactionWithCreditBalance.getTransactionId(), downValue*(-1));
+		accountService.updateLimitAccount(transactionWithCreditBalance, downValue*(-1));
 
 		transactionBalance += downValue;
 
@@ -183,16 +187,16 @@ public class TransactionService {
 		if (transaction.getAmount() >= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar cadastro de compras ou saques com valores nulos ou positivos.");
 
-		AccountDTO account = accountRepository.findAccount(transaction.getAccountId());
+		AccountDTO account = accountService.getAccount(transaction.getAccountId());
 		if (account == null || account.getAccountId() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque a conta informada não existe.");
 
 		if (OperationType.isCompra(transaction.getOperationTypeId())
-				&& account.getAvailableCreditLimit().getAmount() <= Math.abs(transaction.getAmount()))
+				&& account.getAvailableCreditLimit().getAmount() < Math.abs(transaction.getAmount()))
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite de crédito suficiente.");
 
 		if (OperationType.isSaque(transaction.getOperationTypeId())
-				&& account.getAvailableWithdrawalLimit().getAmount() <= Math.abs(transaction.getAmount()))
+				&& account.getAvailableWithdrawalLimit().getAmount() < Math.abs(transaction.getAmount()))
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite suficiente para saque.");
 	}
 
@@ -205,12 +209,17 @@ public class TransactionService {
 		if (payment.getAmount() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar um pagamento com o valor nulo ou negativo.");
 
-		AccountDTO account = accountRepository.findAccount(payment.getAccountId());
+		AccountDTO account = accountService.getAccount(payment.getAccountId());
 		if (account == null || account.getAccountId() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque a conta informada não existe.");
 
-		if (transactionRepository.hasCreditBalance(payment.getAccountId()))
+		boolean hasNegativeBalance = transactionRepository.hasBalanceByOperation(payment.getAccountId(), OperationType.getNegativeOperations());
+		if (!hasNegativeBalance)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar um pagamento porque não há contas a pagar.");
+
+		boolean hasPositiveBalance = transactionRepository.hasBalanceByOperation(payment.getAccountId(), OperationType.getPositiveOperations());
+		if (hasPositiveBalance)
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "Não é possível realizar este pagamento porque há um saldo credor.");
 	}
 
 }

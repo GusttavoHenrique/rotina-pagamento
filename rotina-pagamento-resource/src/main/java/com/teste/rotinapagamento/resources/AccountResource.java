@@ -31,7 +31,6 @@ public class AccountResource {
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity insertAccount(@RequestBody AccountDTO accountDTO) {
         AccountDTO account = accountService.insertAccount(accountDTO);
-
         return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(account);
     }
 
@@ -41,14 +40,12 @@ public class AccountResource {
             @RequestBody AccountDTO accountDTO
     ) {
         AccountDTO account = accountService.updateAccount(accountId, accountDTO);
-
         return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(account);
     }
 
     @RequestMapping(value = "/limits", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity listLimits() {
         List<AccountDTO> accounts = accountService.getAccounts();
-
         return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(accounts);
     }
 

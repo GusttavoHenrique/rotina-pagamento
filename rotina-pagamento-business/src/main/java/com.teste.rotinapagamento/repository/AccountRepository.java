@@ -1,10 +1,8 @@
 package com.teste.rotinapagamento.repository;
 
-import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.AccountDTO;
 import com.teste.rotinapagamento.dto.AvailableLimitDTO;
 
-import com.teste.rotinapagamento.dto.TransactionDTO;
 import com.teste.rotinapagamento.exception.ResourceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
@@ -82,7 +80,7 @@ public class AccountRepository {
      * @param accountId                      identificador da conta
      * @param availableCreditLimitAmount     limite de crédito disponível
      * @param availableWithdrawalLimitAmount limite de retirada disponível
-     * @return
+     * @return AccountDTO
      */
     public AccountDTO updateAccount(Integer accountId, Double availableCreditLimitAmount, Double availableWithdrawalLimitAmount) {
         List<Object> params = new ArrayList<>();
@@ -111,20 +109,6 @@ public class AccountRepository {
         }
 
         return findAccount(accountId);
-    }
-
-    /**
-     * Abate o valor do pagamento no limite de crédito ou de retirada da conta.
-     *
-     * @param transaction
-     */
-    public void updateLimitAccount(TransactionDTO transaction, Double amount) {
-        Integer accountId = transaction.getAccountId();
-        if (transaction.getOperationTypeId() == OperationType.SAQUE.getId()) {
-            updateAccount(accountId, null, amount);
-        } else {
-            updateAccount(accountId, amount, null);
-        }
     }
 
     /**
