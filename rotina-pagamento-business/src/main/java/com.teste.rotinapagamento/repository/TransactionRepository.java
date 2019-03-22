@@ -35,7 +35,7 @@ public class TransactionRepository {
      * @param transactionId identificador da transação
      * @return TransactionDTO
      */
-    public TransactionDTO findTransaction(Integer transactionId, Integer accountId, Integer operationTypeId){
+    public TransactionDTO findTransaction(Integer transactionId, Integer accountId, Integer operationTypeId, Boolean hasCreditBalance){
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM public.transactions WHERE 1=1 ");
 
@@ -53,6 +53,10 @@ public class TransactionRepository {
 		    sql.append(" AND operation_type_id=?");
 		    params.add(operationTypeId);
 	    }
+
+	    if(hasCreditBalance != null){
+            sql.append(" AND balance > 0");
+        }
 
         return jdbcTemplate.query(sql.toString(), params.toArray(), new ResultSetExtractor<TransactionDTO>() {
             @Override

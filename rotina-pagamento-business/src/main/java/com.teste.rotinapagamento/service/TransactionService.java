@@ -44,6 +44,8 @@ public class TransactionService {
 		Double newTransactionBalance = downCreditBalance(transaction);
 		if(newTransactionBalance != null){
 			transaction.setBalance(newTransactionBalance);
+		} else {
+			transaction.setBalance(transaction.getAmount());
 		}
 
 		transaction = insertCreditPurchaseOrWithdrawal(transaction);
@@ -57,12 +59,12 @@ public class TransactionService {
 	 * @return TransactionDTO
 	 */
 	private TransactionDTO insertCreditPurchaseOrWithdrawal(TransactionDTO transaction) {
-		Double balance = transaction.getAmount();
+		Double balance = transaction.getBalance();
 		Date dueDate = transaction.getDueDate() != null ? new Date(transaction.getDueDate()) : null;
 		Integer transactionId = transactionRepository.insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount(), balance, dueDate);
 		accountService.updateLimitAccount(transaction, balance);
 
-		return transactionRepository.findTransaction(transactionId, null, null);
+		return transactionRepository.findTransaction(transactionId, null, null, null);
 	}
 
 	/**
@@ -77,7 +79,7 @@ public class TransactionService {
 		Double balance = downPaymentInTransactions(payment);
 		Integer transactionId = transactionRepository.insertTransaction(payment.getAccountId(), OperationType.PAGAMENTO.getId(), payment.getAmount(), balance, null);
 
-		return transactionRepository.findTransaction(transactionId, null, null);
+		return transactionRepository.findTransaction(transactionId, null, null, null);
 	}
 
 	/**
@@ -149,7 +151,7 @@ public class TransactionService {
 	 * @return Double
 	 */
 	private Double downCreditBalance(TransactionDTO transaction) {
-		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId());
+		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId(), true);
 
 		if(transactionWithCreditBalance == null) return null;
 
@@ -171,8 +173,6 @@ public class TransactionService {
 		Double downValue = Math.abs(transactionBalance) >= Math.abs(creditBalance) ? creditBalance : Math.abs(transactionBalance);
 
 		transactionRepository.updateBalanceByTransaction(transactionWithCreditBalance.getTransactionId(), downValue*(-1));
-		accountService.updateLimitAccount(transactionWithCreditBalance, downValue*(-1));
-
 		transactionBalance += downValue;
 
 		return transactionBalance;
@@ -191,13 +191,29 @@ public class TransactionService {
 		if (account == null || account.getAccountId() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque a conta informada não existe.");
 
-		if (OperationType.isCompra(transaction.getOperationTypeId())
-				&& account.getAvailableCreditLimit().getAmount() < Math.abs(transaction.getAmount()))
+		Double totalCredit = getTotalCredit(account.getAccountId(), account.getAvailableCreditLimit().getAmount());
+		if (OperationType.isCompra(transaction.getOperationTypeId()) && totalCredit < Math.abs(transaction.getAmount()))
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite de crédito suficiente.");
 
-		if (OperationType.isSaque(transaction.getOperationTypeId())
-				&& account.getAvailableWithdrawalLimit().getAmount() < Math.abs(transaction.getAmount()))
+		totalCredit = getTotalCredit(account.getAccountId(), account.getAvailableWithdrawalLimit().getAmount());
+		if (OperationType.isSaque(transaction.getOperationTypeId()) && totalCredit < Math.abs(transaction.getAmount()))
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, "A operação não pode ser concluída porque você não dispõe de limite suficiente para saque.");
+	}
+
+	/**
+	 * Calcula o valor total de crédito para compra ou saque de uma conta.
+	 *
+	 * @param accountId identificador da conta
+	 * @param creditLimitByOperation limite de crédito da conta para uma determinada operação
+	 * @return Double
+	 */
+	private Double getTotalCredit(Integer accountId, Double creditLimitByOperation){
+		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, accountId, OperationType.PAGAMENTO.getId(), true);
+		if(transactionWithCreditBalance != null && transactionWithCreditBalance.getBalance() > 0){
+			return creditLimitByOperation + transactionWithCreditBalance.getBalance();
+		} else {
+			return creditLimitByOperation;
+		}
 	}
 
 	/**
