@@ -20,6 +20,10 @@ public class AccountDTO {
     @JsonProperty("available_withdrawal_limit")
     private AvailableLimitDTO availableWithdrawalLimit;
 
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @JsonProperty("credit_balance")
+    private AvailableLimitDTO creditBalance;
+
     public Integer getAccountId() {
         return accountId;
     }
@@ -42,5 +46,13 @@ public class AccountDTO {
 
     public void setAvailableWithdrawalLimit(AvailableLimitDTO availableWithdrawalLimit) {
         this.availableWithdrawalLimit = availableWithdrawalLimit;
+    }
+
+    public AvailableLimitDTO getCreditBalance() {
+        return creditBalance;
+    }
+
+    public void setCreditBalance(AvailableLimitDTO creditBalance) {
+        this.creditBalance = creditBalance;
     }
 }
