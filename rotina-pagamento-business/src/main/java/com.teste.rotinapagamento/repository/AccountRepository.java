@@ -41,7 +41,7 @@ public class AccountRepository {
 		sql.append("SELECT a.account_id, a.available_credit_limit, ")
 				.append("a.available_withdrawal_limit, credit_balance.balance AS credit_balance ")
 				.append("FROM public.accounts a ")
-				.append("JOIN ( ")
+				.append("LEFT JOIN ( ")
 				.append("  SELECT account_id, balance FROM public.transactions WHERE 1=1 AND operation_type_id=4 AND balance > 0 ")
 				.append(") AS credit_balance ON (credit_balance.account_id = a.account_id) ");
 

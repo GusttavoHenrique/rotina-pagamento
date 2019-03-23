@@ -34,7 +34,7 @@ public class AccountService {
      * @return AccountDTO
      */
     public AccountDTO insertAccount(AccountDTO account) {
-        if(account.getAvailableCreditLimit() == null && account.getAvailableWithdrawalLimit() == null)
+        if(account == null || (account.getAvailableCreditLimit() == null && account.getAvailableWithdrawalLimit() == null))
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.nao.informado"));
 
         Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : null;
@@ -50,7 +50,7 @@ public class AccountService {
      * @return AccountDTO
      */
     public AccountDTO updateAccount(Integer accountId, AccountDTO account) {
-        if(accountRepository.findAccount(accountId) == null)
+        if(accountId == null || account == null || accountRepository.findAccount(accountId) == null)
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 
         Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : null;

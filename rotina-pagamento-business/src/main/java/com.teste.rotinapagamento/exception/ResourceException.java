@@ -2,7 +2,6 @@ package com.teste.rotinapagamento.exception;
 
 import com.teste.rotinapagamento.auxiliar.ErrorMessage;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Gusttavo Henrique (gusttavohnssilva@gmail.com)

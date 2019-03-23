@@ -101,7 +101,7 @@ public class TransactionRepository {
                 .append("JOIN public.operations_types ot ON (ot.operation_type_id = t.operation_type_id) ")
                 .append("WHERE (t.balance <> 0 or (ot.operation_type_id = ? and t.balance <> 0)) ")
                 .append(" AND t.account_id=? ")
-                .append("order by ot.charge_order ASC, t.event_date ASC ");
+                .append("ORDER BY ot.charge_order ASC, t.event_date ASC ");
 
         try{
             return jdbcTemplate.query(sql.toString(), new Object[]{OperationType.PAGAMENTO.getId(), accountId}, new RowMapper<TransactionDTO>() {
