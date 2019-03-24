@@ -22,10 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountService {
 
     @Autowired
-    SourceMessage sourceMessage;
+    private SourceMessage sourceMessage;
 
     @Autowired
-    AccountRepository accountRepository;
+    private AccountRepository accountRepository;
 
     /**
      * Delega a operação de inserção de contas para o método insert da classe repository.
@@ -50,9 +50,11 @@ public class AccountService {
      * @return AccountDTO
      */
     public AccountDTO updateAccount(Integer accountId, AccountDTO account) {
-        AccountDTO accountDB = accountRepository.findAccount(accountId);
+        if(accountId == null || account == null)
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 
-        if(accountId == null || account == null || accountDB == null)
+        AccountDTO accountDB = accountRepository.findAccount(accountId);
+        if(accountDB == null)
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 
         Double creditAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : 0.00;

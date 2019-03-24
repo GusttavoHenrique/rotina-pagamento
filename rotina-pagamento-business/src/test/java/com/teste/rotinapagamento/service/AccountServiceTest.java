@@ -38,18 +38,22 @@ public class AccountServiceTest {
     private AccountDTO accountWithAvailableCredit;
     private AccountDTO accountWithAvailableWithdrawal;
     private AccountDTO accountResponse;
-    private AccountDTO inexistentAccount;
+    private AccountDTO notExistAccount;
     private AccountDTO existingAccount;
+    private AccountDTO accountWithNegativeCredit;
+    private AccountDTO accountWithNegativeWithdrawal;
 
     @Before
     public void init() {
+        when(sourceMessage.getMessage(anyString())).thenReturn("Mensagem de erro retornada!");
+
         accountBuilder = new AccountBuilder();
 
         nullAccount = null;
         accountResponse = accountBuilder.withAccountId(1).withAvailableWithdrawalLimit(1000.00).build();
         accountWithAvailableCredit = accountBuilder.withAvailableCreditLimit(2000.00).build();
         accountWithAvailableWithdrawal = accountBuilder.withAvailableWithdrawalLimit(3000.00).build();
-        inexistentAccount = accountBuilder.
+        notExistAccount = accountBuilder.
                 withAccountId(4).
                 withAvailableCreditLimit(4000.00).
                 withAvailableWithdrawalLimit(4000.00).
@@ -59,13 +63,12 @@ public class AccountServiceTest {
                 withAvailableCreditLimit(5000.00).
                 withAvailableWithdrawalLimit(5000.00).
                 build();
-
+        accountWithNegativeCredit = accountBuilder.withAccountId(1).withAvailableCreditLimit(-2000.00).build();
+        accountWithNegativeWithdrawal = accountBuilder.withAccountId(1).withAvailableWithdrawalLimit(-2000.00).build();
     }
 
     @Test(expected = ResourceException.class)
     public void insertAccountWithAvailableCreditAndWithdrawalLimitsNullTest() {
-        when(accountService.insertAccount(anyObject())).thenCallRealMethod();
-        doReturn(anyString()).when(sourceMessage.getMessage(anyString()));
         accountService.insertAccount(nullAccount);
     }
 
@@ -91,26 +94,18 @@ public class AccountServiceTest {
 
     @Test(expected = ResourceException.class)
     public void update_null_accountTest() {
-        when(accountService.updateAccount(null, nullAccount)).thenCallRealMethod();
-        doReturn(null).when(accountRepository.findAccount(null));
-        doReturn(anyString()).when(sourceMessage.getMessage(anyString()));
-        accountService.updateAccount(null, nullAccount);
+        updateAccount(null, nullAccount, null);
     }
 
     @Test(expected = ResourceException.class)
     public void update_inexistent_accountTest() {
-        when(accountService.updateAccount(inexistentAccount.getAccountId(), inexistentAccount)).thenCallRealMethod();
-        doReturn(null).when(accountRepository.findAccount(inexistentAccount.getAccountId()));
-        doReturn(anyString()).when(sourceMessage.getMessage(anyString()));
-        accountService.updateAccount(inexistentAccount.getAccountId(), inexistentAccount);
+        updateAccount(notExistAccount.getAccountId(), notExistAccount, null);
     }
 
     @Test
     public void update_existing_accountTest() {
         Integer existingAccountId = existingAccount.getAccountId();
-        when(accountService.updateAccount(existingAccountId, existingAccount)).thenCallRealMethod();
-
-        doReturn(existingAccount).when(accountRepository.findAccount(existingAccountId));
+        when(accountRepository.findAccount(anyInt())).thenReturn(existingAccount);
 
         doReturn(existingAccount).
                 when(accountRepository).
@@ -119,6 +114,21 @@ public class AccountServiceTest {
         AccountDTO accountDTO = accountService.updateAccount(existingAccountId, existingAccount);
         assertNotNull(accountDTO);
         assertEquals(accountDTO, existingAccount);
+    }
+
+    @Test(expected = ResourceException.class)
+    public void updateWith_negativeCredit_limitAccountTest() {
+        updateAccount(accountWithNegativeCredit.getAccountId(), accountWithNegativeCredit, accountResponse);
+    }
+
+    @Test(expected = ResourceException.class)
+    public void updateWith_negativeWithdrawal_limitAccountTest() {
+        updateAccount(accountWithNegativeWithdrawal.getAccountId(), accountWithNegativeWithdrawal, accountResponse);
+    }
+
+    private void updateAccount(Integer accountid, AccountDTO account, AccountDTO accountResponse){
+        when(accountRepository.findAccount(anyInt())).thenReturn(accountResponse);
+        accountService.updateAccount(accountid, account);
     }
 
 }

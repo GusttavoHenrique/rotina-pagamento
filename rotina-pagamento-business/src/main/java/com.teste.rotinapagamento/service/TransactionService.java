@@ -26,13 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class TransactionService {
 
 	@Autowired
-	SourceMessage sourceMessage;
+	private SourceMessage sourceMessage;
 
 	@Autowired
-	TransactionRepository transactionRepository;
+	private TransactionRepository transactionRepository;
 
 	@Autowired
-	AccountService accountService;
+	private AccountService accountService;
 
 	/**
 	 * Delega a inserção de transações para o método insert da classe repository.
@@ -106,7 +106,7 @@ public class TransactionService {
 	 * @return Double
 	 * @throws ResourceException
 	 */
-	private Double downPaymentInTransactions(TransactionDTO payment) throws ResourceException {
+	Double downPaymentInTransactions(TransactionDTO payment) throws ResourceException {
 		Double paymentBalance = payment.getAmount();
 
 		List<TransactionDTO> transactions = transactionRepository.findTransactionsToDownPayment(payment.getAccountId());
@@ -244,13 +244,9 @@ public class TransactionService {
 	 *
 	 * @param payment transação de pagamento
 	 */
-	private void paymentValidate(TransactionDTO payment) {
+	void paymentValidate(TransactionDTO payment) {
 		if (payment.getAmount() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.pagamento.nulo"));
-
-		boolean hasNegativeBalance = transactionRepository.hasBalanceByOperation(payment.getAccountId(), OperationType.getNegativeOperations());
-		if (!hasNegativeBalance)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.pagamento.desnecessaria"));
 
 		boolean hasPositiveBalance = transactionRepository.hasBalanceByOperation(payment.getAccountId(), OperationType.getPositiveOperations());
 		if (hasPositiveBalance)

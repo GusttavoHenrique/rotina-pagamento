@@ -28,10 +28,10 @@ import java.util.stream.Collectors;
 public class TransactionRepository {
 
     @Autowired
-    SourceMessage sourceMessage;
+    private SourceMessage sourceMessage;
 
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    private JdbcTemplate jdbcTemplate;
 
     /**
      * Busca na base de dados uma conta que corresponda ao identificador passado.

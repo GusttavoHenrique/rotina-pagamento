@@ -26,10 +26,10 @@ import org.springframework.stereotype.Repository;
 public class AccountRepository {
 
 	@Autowired
-	SourceMessage sourceMessage;
+	private SourceMessage sourceMessage;
 
 	@Autowired
-	JdbcTemplate jdbcTemplate;
+	private JdbcTemplate jdbcTemplate;
 
 	/**
 	 * Busca na base de dados todas as contas registradas com os limites de crédito e saque atualizados.

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class SourceMessage {
 
 	@Autowired
-	MessageSource messageSource;
+	private MessageSource messageSource;
 
 	public String getMessage(String id) {
 		Locale locale = LocaleContextHolder.getLocale();
