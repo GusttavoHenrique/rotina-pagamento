@@ -37,8 +37,8 @@ public class AccountService {
         if(account == null || (account.getAvailableCreditLimit() == null && account.getAvailableWithdrawalLimit() == null))
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.nao.informado"));
 
-        Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : null;
-        Double availableWithdrawalLimitAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : null;
+        Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : 0.00;
+        Double availableWithdrawalLimitAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : 0.00;
         return accountRepository.insertAccount(availableCreditLimitAmount, availableWithdrawalLimitAmount);
     }
 
@@ -50,12 +50,23 @@ public class AccountService {
      * @return AccountDTO
      */
     public AccountDTO updateAccount(Integer accountId, AccountDTO account) {
-        if(accountId == null || account == null || accountRepository.findAccount(accountId) == null)
+        AccountDTO accountDB = accountRepository.findAccount(accountId);
+
+        if(accountId == null || account == null || accountDB == null)
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 
-        Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : null;
-        Double availableWithdrawalLimitAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : null;
-        return updateAccount(accountId, availableCreditLimitAmount, availableWithdrawalLimitAmount);
+        Double creditAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : 0.00;
+        Double withdrawalAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : 0.00;
+        Double creditAmountDB = accountDB.getAvailableCreditLimit() != null ? accountDB.getAvailableCreditLimit().getAmount() : 0.00;
+        Double withdrawalAmountDB = accountDB.getAvailableWithdrawalLimit() != null ? accountDB.getAvailableWithdrawalLimit().getAmount() : 0.00;
+
+        if(creditAmount != null && creditAmountDB != null && creditAmount < 0 && creditAmountDB < Math.abs(creditAmount))
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.credito.insuficiente"));
+
+        if(withdrawalAmount != null && withdrawalAmountDB != null && withdrawalAmount < 0 && withdrawalAmountDB < Math.abs(withdrawalAmount))
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.saque.insuficiente"));
+
+        return updateAccount(accountId, creditAmount, withdrawalAmount);
     }
 
     /**

@@ -41,19 +41,12 @@ public class TransactionService {
 	 * @return TransactionDTO
 	 */
 	public TransactionDTO insertTransaction(TransactionDTO transaction) {
-		if (transaction.getOperationTypeId() == OperationType.PAGAMENTO.getId()) return insertPayment(transaction);
+		insertTransactionValidate(transaction);
 
-		transactionValidate(transaction);
+		if (transaction.getOperationTypeId() == OperationType.PAGAMENTO.getId())
+			return insertPayment(transaction);
 
-		Double newTransactionBalance = downCreditBalance(transaction);
-		if(newTransactionBalance != null){
-			transaction.setBalance(newTransactionBalance);
-		} else {
-			transaction.setBalance(transaction.getAmount());
-		}
-
-		transaction = insertCreditPurchaseOrWithdrawal(transaction);
-		return transaction;
+		return insertCreditPurchaseOrWithdrawal(transaction);
 	}
 
 	/**
@@ -63,12 +56,16 @@ public class TransactionService {
 	 * @return TransactionDTO
 	 */
 	private TransactionDTO insertCreditPurchaseOrWithdrawal(TransactionDTO transaction) {
+		transactionValidate(transaction);
+		downCreditBalance(transaction);
+
 		Double balance = transaction.getBalance();
 		Date dueDate = transaction.getDueDate() != null ? new Date(transaction.getDueDate()) : null;
 		Integer transactionId = transactionRepository.insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount(), balance, dueDate);
 		accountService.updateLimitAccount(transaction, balance);
 
-		return transactionRepository.findTransaction(transactionId, null, null, null);
+		transaction = transactionRepository.findTransaction(transactionId, null, null, null);
+		return transaction;
 	}
 
 	/**
@@ -152,16 +149,21 @@ public class TransactionService {
 	 * Abate o saldo credor na trasação de compra ou saque em execução.
 	 *
 	 * @param transaction transação que terá valor descontado pelo saldo credor
-	 * @return Double
 	 */
-	private Double downCreditBalance(TransactionDTO transaction) {
+	private void downCreditBalance(TransactionDTO transaction) {
 		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId(), true);
 
-		if(transactionWithCreditBalance == null) return null;
+        Double transactionBalance = transaction.getAmount();
+        Double newTransactionBalance = null;
 
-		Double transactionBalance = transaction.getAmount();
-		Double newTransactionBalance = downTransactionBalanceInCreditBalance(transactionWithCreditBalance, transactionBalance);
-		return newTransactionBalance;
+		if(transactionWithCreditBalance != null)
+            newTransactionBalance = downTransactionBalanceInCreditBalance(transactionWithCreditBalance, transactionBalance);
+
+		if(newTransactionBalance != null){
+			transaction.setBalance(newTransactionBalance);
+		} else {
+			transaction.setBalance(transaction.getAmount());
+		}
 	}
 
 	/**
@@ -192,16 +194,14 @@ public class TransactionService {
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.cadastro.valor.nulo"));
 
 		AccountDTO account = accountService.getAccount(transaction.getAccountId());
-		if (account == null || account.getAccountId() <= 0)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.conta.inexistente"));
 
 		Double totalCredit = getTotalCredit(account.getAccountId(), account.getAvailableCreditLimit().getAmount());
 		if (OperationType.isCompra(transaction.getOperationTypeId()) && totalCredit < Math.abs(transaction.getAmount()))
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.limite.credito.insuficiente"));
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.credito.insuficiente"));
 
 		totalCredit = getTotalCredit(account.getAccountId(), account.getAvailableWithdrawalLimit().getAmount());
 		if (OperationType.isSaque(transaction.getOperationTypeId()) && totalCredit < Math.abs(transaction.getAmount()))
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.limite.saque.insuficiente"));
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.saque.insuficiente"));
 	}
 
 	/**
@@ -221,6 +221,25 @@ public class TransactionService {
 	}
 
 	/**
+	 * Método utilizado para verificar se os dados obrigatórios para o cadastro das transações foram passados.
+	 *
+	 * @param transaction transação que será cadastrada
+	 */
+	private void insertTransactionValidate(TransactionDTO transaction) {
+		if (transaction == null)
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.invalida"));
+
+		if (transaction.getOperationTypeId() == null)
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.operacao.nula"));
+
+		if (transaction.getAmount() == null)
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.cadastro.valor.nulo"));
+
+		if (transaction.getAccountId() == null || transaction.getAccountId() <= 0)
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
+	}
+
+	/**
 	 * Método utilizado para realizar validações nos requests de transações de pagamento.
 	 *
 	 * @param payment transação de pagamento
@@ -228,10 +247,6 @@ public class TransactionService {
 	private void paymentValidate(TransactionDTO payment) {
 		if (payment.getAmount() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.pagamento.nulo"));
-
-		AccountDTO account = accountService.getAccount(payment.getAccountId());
-		if (account == null || account.getAccountId() <= 0)
-			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 
 		boolean hasNegativeBalance = transactionRepository.hasBalanceByOperation(payment.getAccountId(), OperationType.getNegativeOperations());
 		if (!hasNegativeBalance)
