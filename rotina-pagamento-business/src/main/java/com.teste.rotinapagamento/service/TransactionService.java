@@ -66,7 +66,7 @@ public class TransactionService {
 
 		transaction = transactionRepository.findTransaction(transactionId, null, null, null);
 		return transaction;
-	}
+}
 
 	/**
 	 * Delega a inserção de uma transaction de pagamento para o insert da classe repository.
@@ -90,6 +90,9 @@ public class TransactionService {
 	 * @return List<TransactionDTO>
 	 */
 	public List<TransactionDTO> insertPayments(List<TransactionDTO> payments) throws ResourceException {
+		if (payments == null || payments.size() <= 0)
+			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.lista.pagamento.nula"));
+
 		List<TransactionDTO> transactions = new ArrayList<>();
 		for (TransactionDTO payment : payments) {
 			payment = insertPayment(payment);
@@ -106,14 +109,16 @@ public class TransactionService {
 	 * @return Double
 	 * @throws ResourceException
 	 */
-	Double downPaymentInTransactions(TransactionDTO payment) throws ResourceException {
+	protected Double downPaymentInTransactions(TransactionDTO payment) throws ResourceException {
 		Double paymentBalance = payment.getAmount();
 
 		List<TransactionDTO> transactions = transactionRepository.findTransactionsToDownPayment(payment.getAccountId());
-		for (TransactionDTO transaction : transactions) {
-			if (paymentBalance <= 0) break;
+		if(transactions != null){
+			for (TransactionDTO transaction : transactions) {
+				if (paymentBalance <= 0) break;
 
-			paymentBalance = downPaymentInTransactionBalance(transaction, paymentBalance);
+				paymentBalance = downPaymentInTransactionBalance(transaction, paymentBalance);
+			}
 		}
 
 		return paymentBalance;
@@ -150,7 +155,7 @@ public class TransactionService {
 	 *
 	 * @param transaction transação que terá valor descontado pelo saldo credor
 	 */
-	private void downCreditBalance(TransactionDTO transaction) {
+	protected void downCreditBalance(TransactionDTO transaction) {
 		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId(), true);
 
         Double transactionBalance = transaction.getAmount();
@@ -244,7 +249,7 @@ public class TransactionService {
 	 *
 	 * @param payment transação de pagamento
 	 */
-	void paymentValidate(TransactionDTO payment) {
+	protected void paymentValidate(TransactionDTO payment) {
 		if (payment.getAmount() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.pagamento.nulo"));
 
