@@ -1,11 +1,11 @@
-version: '2'
+version: '3'
 
 services:
   postgres:
     image: postgres:latest
     container_name: postgres
     networks:
-      - rotina-pagamento
+      - payment-routine
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
@@ -15,10 +15,10 @@ services:
     build:
       dockerfile: ./Dockerfile
       context: .
-    image: rotina-pagamento
-    container_name: rotina-pagamento
+    image: payment-routine
+    container_name: payment-routine
     networks:
-      - rotina-pagamento
+      - payment-routine
     depends_on:
       - "postgres"
     environment:
@@ -31,5 +31,5 @@ services:
       - "8080:8080"
 
 networks:
-  rotina-pagamento:
+  payment-routine:
     driver: bridge
