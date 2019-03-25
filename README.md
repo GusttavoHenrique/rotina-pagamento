@@ -1,18 +1,16 @@
-Rotina de Pagamento
-=================
+# Rotina de Pagamento
 
 Projeto para simulação de rotinas de pagamentos de uma processadora de crédito.
 
-Operações Disponíveis
----------------
+## Operações Disponíveis
 
-###Cadastro de Contas:
+### Cadastro de Contas:
 
 ```
 POST http://localhost:8080/payment-routine/v1/accounts
 ```
 
-###Resposta:
+Resposta:
 
 ```JSON
 {
@@ -29,13 +27,13 @@ POST http://localhost:8080/payment-routine/v1/accounts
 Obs: um dos dois atributos `available_credit_limit` ou `available_withdrawal_limit` são obrigatórios no corpo da requisição. O atributo `account_id` 
 é ignorado, pois é gerado pela própria aplicação.
 
-###Atualização do Limite de Conta:
+### Atualização do Limite de Conta:
 
 ```
 PATCH http://localhost:8080/payment-routine/v1/accounts/{account_id}
 ```
 
-###Resposta:
+Resposta:
 
 ```JSON
 {
@@ -51,13 +49,13 @@ PATCH http://localhost:8080/payment-routine/v1/accounts/{account_id}
 
 Obs: os atributos `account_id` e um dos limites (`available_credit_limit` ou `available_withdrawal_limit`) são obrigatórios no corpo da requisição.
 
-###Consulta de Limites de Contas Cadastradas:
+### Consulta de Limites de Contas Cadastradas:
 
 ```
 GET http://localhost:8080/payment-routine/v1/accounts/limits
 ```
 
-###Resposta:
+Resposta:
 
 ```JSON
 [
@@ -79,13 +77,13 @@ GET http://localhost:8080/payment-routine/v1/accounts/limits
 Obs: `credit_balance` é o saldo credor da conta. Esse saldo não é acrescentado ao limite, mas pode ser abatido nas próximas 
 transações de compras ou saque. 
 
-###Consulta de Transações
+### Consulta de Transações
 
 ```
 GET http://localhost:8080/payment-routine/v1/transactions
 ```
 
-###Resposta:
+Resposta:
 
 ```JSON
 [
@@ -103,13 +101,13 @@ GET http://localhost:8080/payment-routine/v1/transactions
 
 Obs: o atributo `account_id` poderá ser passado como query para filtrar pelas transações de uma conta específica.
 
-###Cadastro de Transações
+### Cadastro de Transações
 
 ```
 POST http://localhost:8080/payment-routine/v1/transactions
 ```
 
-###Resposta:
+Resposta:
 
 ```JSON
 {
@@ -151,8 +149,7 @@ Resposta:
 Obs: os atributos `account_id`, `operation_type_id` e `amount` são obrigatórios no corpo da requisição. O atributo `due_date` 
 é opcional e todos os outros são ignorados, pois são gerados pela própria aplicação.
 
-Tipos de Operações
----------------
+## Tipos de Operações
 
 A tabela abaixo sugere alguns tipos de operações possíveis para realização de transações.
 
@@ -163,18 +160,16 @@ A tabela abaixo sugere alguns tipos de operações possíveis para realização 
 | 3                 | SAQUE            |
 | 4                 | PAGAMENTO        |
 
-Dependências
----------------
+## Dependências
 * Java 8
 * Maven 3
 * Docker
 * Docker-Compose
 
-Executando o projeto
----------------
+## Executando o projeto com docker-compose
 
 * Clonar ou baixar o projeto;
-* Utilizando um terminal do sistema operacional, entrar no diretório /rotina-pagamento (diretório raiz do projeto);
+* Utilizando um terminal do sistema operacional, entrar no diretório /rotina-pagamento (diretório raiz do projeto); 
 * Executar os seguintes comandos:
 
 ```SHELL
@@ -189,8 +184,10 @@ Executando o projeto
 > docker-compose up
 ```
 
-* Utilizar um dos [endpoins disponíveis na aplicação](Operações Disponíveis)
+Obs.: também é possível executar o script build.sh para rodar o build da aplicação no docker. 
+Lembre-se de dar permissões para o arquivo build.sh executando o comando `chmod +x build.sh`.
 
-Autores
----------------
+* Utilizar o serviço, consumindo um dos [endpoins disponíveis na aplicação](https://github.com/GusttavoHenrique/rotina-pagamento#opera%C3%A7%C3%B5es-dispon%C3%ADveis).
+
+## Autores
 * **Gusttavo Silva** - *Developer* - [gusttavohnssilva@gmail.com](mailto:gusttavohnssilva@gmail.com)
