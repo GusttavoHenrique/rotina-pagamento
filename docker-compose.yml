@@ -1,0 +1,33 @@
+version: '2'
+services:
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    networks:
+      - rotina-pagamento
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+  app:
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    image: rotina-pagamento
+    container_name: rotina-pagamento
+    networks:
+      - rotina-pagamento
+    depends_on:
+      - "postgres"
+    environment:
+      - DATABASE_HOST=localhost
+      - DATABASE_USER=admin
+      - DATABASE_PASSWORD=admin
+      - DATABASE_NAME=postgres
+      - DATABASE_PORT=5432
+    ports:
+      - "8080:8080"
+
+networks:
+  rotina-pagamento:
+    driver: bridge
