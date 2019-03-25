@@ -56,6 +56,7 @@ public class TransactionService {
 	 * @return TransactionDTO
 	 */
 	private TransactionDTO insertCreditPurchaseOrWithdrawal(TransactionDTO transaction) {
+		amountSignalsInverter(transaction);
 		transactionValidate(transaction);
 		downCreditBalance(transaction);
 
@@ -66,7 +67,19 @@ public class TransactionService {
 
 		transaction = transactionRepository.getTransaction(transactionId, null, null, null);
 		return transaction;
-}
+	}
+
+	/**
+	 * Método utilizado para inverter o sinal de transações de compra ou saque que tenham
+	 * sido recebidas com amount positivo.
+	 *
+	 * @param transaction transação que terá o amount modificado
+	 */
+	private void amountSignalsInverter(TransactionDTO transaction) {
+		double amount = transaction.getAmount();
+
+		if (amount > 0) transaction.setAmount(amount*(-1));
+	}
 
 	/**
 	 * Delega a inserção de uma transaction de pagamento para o insert da classe repository.

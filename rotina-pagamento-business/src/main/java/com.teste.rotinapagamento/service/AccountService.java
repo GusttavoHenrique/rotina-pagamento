@@ -5,6 +5,7 @@ import java.util.List;
 import com.teste.rotinapagamento.auxiliar.SourceMessage;
 import com.teste.rotinapagamento.auxiliar.OperationType;
 import com.teste.rotinapagamento.dto.AccountDTO;
+import com.teste.rotinapagamento.dto.AvailableLimitDTO;
 import com.teste.rotinapagamento.dto.TransactionDTO;
 import com.teste.rotinapagamento.exception.ResourceException;
 import com.teste.rotinapagamento.repository.AccountRepository;
@@ -37,8 +38,21 @@ public class AccountService {
         if(account == null || (account.getAvailableCreditLimit() == null && account.getAvailableWithdrawalLimit() == null))
             throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.nao.informado"));
 
-        Double availableCreditLimitAmount = account.getAvailableCreditLimit() != null ? account.getAvailableCreditLimit().getAmount() : 0.00;
-        Double availableWithdrawalLimitAmount = account.getAvailableWithdrawalLimit() != null ? account.getAvailableWithdrawalLimit().getAmount() : 0.00;
+        AvailableLimitDTO availableCreditLimit = account.getAvailableCreditLimit();
+        AvailableLimitDTO availableWithdrawalLimit = account.getAvailableWithdrawalLimit();
+
+        double availableCreditLimitAmount = 0.00;
+        double availableWithdrawalLimitAmount = 0.00;
+
+        if(availableCreditLimit != null && availableCreditLimit.getAmount() != null)
+             availableCreditLimitAmount = availableCreditLimit.getAmount();
+
+        if(availableWithdrawalLimit != null && availableWithdrawalLimit.getAmount() != null)
+            availableWithdrawalLimitAmount = availableWithdrawalLimit.getAmount();
+
+        if(availableCreditLimitAmount == 0 && availableWithdrawalLimitAmount == 0)
+            throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.limite.nao.informado"));
+
         return accountRepository.insertAccount(availableCreditLimitAmount, availableWithdrawalLimitAmount);
     }
 
