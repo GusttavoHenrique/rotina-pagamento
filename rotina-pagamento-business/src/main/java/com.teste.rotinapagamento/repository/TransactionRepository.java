@@ -34,38 +34,69 @@ public class TransactionRepository {
     private JdbcTemplate jdbcTemplate;
 
     /**
-     * Busca na base de dados uma conta que corresponda ao identificador passado.
+     * Busca na base de dados uma transação que corresponda aos parâmetros passados.
      *
-     * @param transactionId identificador da transação
+     * @param transactionId    identificador da transação
+     * @param accountId        identificador da conta associada a transação
+     * @param operationTypeId  identificador do tipo de operação
+     * @param hasCreditBalance indica se a consulta deverá ser filtrada por transações com saldo credor
      * @return TransactionDTO
      */
-    public TransactionDTO findTransaction(Integer transactionId, Integer accountId, Integer operationTypeId, Boolean hasCreditBalance){
+    public TransactionDTO getTransaction(Integer transactionId, Integer accountId, Integer operationTypeId, Boolean hasCreditBalance) {
+        List<TransactionDTO> transactions = findTransactions(transactionId, accountId, operationTypeId, hasCreditBalance);
+
+        if (transactions != null && transactions.size() > 0)
+            return transactions.get(0);
+
+        return null;
+    }
+
+    /**
+     * Delega a busca das transações cadastradas na base de dados.
+     *
+     * @param account_id identificador da conta associada a transação
+     * @return List<TransactionDTO>
+     */
+    public List<TransactionDTO> getTransactions(Integer account_id) {
+        return findTransactions(null, account_id, null, null);
+    }
+
+    /**
+     * Busca na base de dados uma transação que corresponda aos parâmetros passados.
+     *
+     * @param transactionId    identificador da transação
+     * @param accountId        identificador da conta associada a transação
+     * @param operationTypeId  identificador do tipo de operação
+     * @param hasCreditBalance indica se a consulta deverá ser filtrada por transações com saldo credor
+     * @return List<TransactionDTO>
+     */
+    private List<TransactionDTO> findTransactions(Integer transactionId, Integer accountId, Integer operationTypeId, Boolean hasCreditBalance) {
         List<Object> params = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM public.transactions WHERE 1=1 ");
 
-        if(transactionId != null){
-        	sql.append(" AND transaction_id=?");
-        	params.add(transactionId);
+        if (transactionId != null) {
+            sql.append(" AND transaction_id=?");
+            params.add(transactionId);
         }
 
-	    if(accountId != null){
-		    sql.append(" AND account_id=?");
-		    params.add(accountId);
-	    }
+        if (accountId != null) {
+            sql.append(" AND account_id=?");
+            params.add(accountId);
+        }
 
-	    if(operationTypeId != null){
-		    sql.append(" AND operation_type_id=?");
-		    params.add(operationTypeId);
-	    }
+        if (operationTypeId != null) {
+            sql.append(" AND operation_type_id=?");
+            params.add(operationTypeId);
+        }
 
-	    if(hasCreditBalance != null){
+        if (hasCreditBalance != null) {
             sql.append(" AND balance > 0");
         }
 
-        return jdbcTemplate.query(sql.toString(), params.toArray(), new ResultSetExtractor<TransactionDTO>() {
-            @Override
-            public TransactionDTO extractData(ResultSet resultSet) throws SQLException, DataAccessException {
-                if(resultSet.next()){
+        try {
+            List<TransactionDTO> transactions = jdbcTemplate.query(sql.toString(), params.toArray(), new RowMapper<TransactionDTO>() {
+                @Override
+                public TransactionDTO mapRow(ResultSet resultSet, int rownumber) throws SQLException {
                     TransactionDTO transaction = new TransactionDTO();
                     transaction.setTransactionId(resultSet.getInt("transaction_id"));
                     transaction.setAccountId(resultSet.getInt("account_id"));
@@ -73,18 +104,21 @@ public class TransactionRepository {
                     transaction.setAmount(resultSet.getDouble("amount"));
                     transaction.setBalance(resultSet.getDouble("balance"));
 
-                    if(resultSet.getDate("event_date") != null)
+                    if (resultSet.getDate("event_date") != null)
                         transaction.setEventDate(resultSet.getDate("event_date").getTime());
 
-                    if(resultSet.getDate("due_date") != null)
+                    if (resultSet.getDate("due_date") != null)
                         transaction.setDueDate(resultSet.getDate("due_date").getTime());
 
                     return transaction;
                 }
+            });
 
-                return null;
-            }
-        });
+            return transactions;
+        } catch (Exception e){
+            throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));
+        }
+
     }
 
     /**
@@ -103,7 +137,7 @@ public class TransactionRepository {
                 .append(" AND t.account_id=? ")
                 .append("ORDER BY ot.charge_order ASC, t.event_date ASC ");
 
-        try{
+        try {
             return jdbcTemplate.query(sql.toString(), new Object[]{OperationType.PAGAMENTO.getId(), accountId}, new RowMapper<TransactionDTO>() {
                 @Override
                 public TransactionDTO mapRow(ResultSet resultSet, int i) throws SQLException {
@@ -182,13 +216,13 @@ public class TransactionRepository {
                 .append("AND operation_type_id IN (")
                 .append(operations.stream()
                         .map(n -> n.toString())
-                        .collect(Collectors.joining( "," )))
+                        .collect(Collectors.joining(",")))
                 .append(") ")
                 .append("GROUP BY account_id LIMIT 1;");
 
         try {
             return jdbcTemplate.queryForObject(sql.toString(), new Object[]{accountId}, Boolean.class);
-        } catch (EmptyResultDataAccessException e1){
+        } catch (EmptyResultDataAccessException e1) {
             return false;
         } catch (Exception e) {
             throw new ResourceException(HttpStatus.INTERNAL_SERVER_ERROR, sourceMessage.getMessage("erro.inesperado"));

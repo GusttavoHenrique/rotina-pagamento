@@ -50,6 +50,7 @@ public class TransactionServiceTest {
     private TransactionDTO transactionWithoutAmount;
     private TransactionDTO transactionWithoutAccount;
     private TransactionDTO transactionWithCreditBalance;
+    private TransactionDTO transactionWithNotFoundAccount;
 
     private TransactionDTO purchaseOrWithdrawal;
     private TransactionDTO purchaseOrWithdrawalWithPositiveAmount;
@@ -75,6 +76,7 @@ public class TransactionServiceTest {
         transactionWithoutAmount = transactionBuilder.withOperationTypeId(1).build();
         transactionWithoutAccount = transactionBuilder.withOperationTypeId(1).withAmount(-100.00).build();
         transactionWithCreditBalance = transactionBuilder.withBalance(500.00).build();
+        transactionWithNotFoundAccount = transactionBuilder.withOperationTypeId(1).withAmount(-100.00).withAccountId(1000).build();
 
         purchaseOrWithdrawal = transactionBuilder.withOperationTypeId(1).withAccountId(1).withAmount(-100.00).build();
         purchaseOrWithdrawalWithPositiveAmount = transactionBuilder.withOperationTypeId(1).withAccountId(1).withAmount(100.00).build();
@@ -106,8 +108,16 @@ public class TransactionServiceTest {
     }
 
     @Test(expected = ResourceException.class)
-    public void insertTransactionWithout_account_test() {
+    public void insertTransactionWithout_informedAccount_test() {
         transactionService.insertTransaction(transactionWithoutAccount);
+    }
+
+    @Test(expected = ResourceException.class)
+    public void insertTransactionWithout_notFoundAccount_test() {
+        doReturn(null)
+                .when(accountService)
+                .getAccount(transactionWithoutAccount.getAccountId());
+        transactionService.insertTransaction(transactionWithNotFoundAccount);
     }
 
     @Test(expected = ResourceException.class)
@@ -131,6 +141,10 @@ public class TransactionServiceTest {
 
     @Test
     public void insertTransaction_withPositiveAmount_test() {
+        doReturn(account)
+                .when(accountService)
+                .getAccount(payment.getAccountId());
+
         doReturn(false)
                 .when(transactionRepository)
                 .hasBalanceByOperation(payment.getAccountId(), OperationType.getPositiveOperations());
@@ -144,7 +158,7 @@ public class TransactionServiceTest {
 
         Integer transactionId = payment.getTransactionId();
         doReturn(payment)
-                .when(transactionRepository).findTransaction(transactionId, null, null, null);
+                .when(transactionRepository).getTransaction(transactionId, null, null, null);
 
         TransactionDTO transaction = transactionService.insertTransaction(payment);
 
@@ -187,14 +201,14 @@ public class TransactionServiceTest {
     private void insertPurchaseOrWithdrawal(TransactionDTO transaction) {
         doReturn(account).when(accountService).getAccount(transaction.getAccountId());
         doReturn(transactionWithCreditBalance).when(transactionRepository)
-                .findTransaction(null, account.getAccountId(), OperationType.PAGAMENTO.getId(), true);
+                .getTransaction(null, account.getAccountId(), OperationType.PAGAMENTO.getId(), true);
 
         Date dueDate = transaction.getDueDate() != null ? new Date(transaction.getDueDate()) : null;
         doReturn(transaction.getTransactionId()).when(transactionRepository)
                 .insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount(), 0.0, dueDate);
 
         doReturn(transaction).when(transactionRepository)
-                .findTransaction(transaction.getTransactionId(), null, null, null);
+                .getTransaction(transaction.getTransactionId(), null, null, null);
 
         TransactionDTO transactionResponse = transactionService.insertTransaction(transaction);
         assertNotNull(transactionResponse);

@@ -64,7 +64,7 @@ public class TransactionService {
 		Integer transactionId = transactionRepository.insertTransaction(transaction.getAccountId(), transaction.getOperationTypeId(), transaction.getAmount(), balance, dueDate);
 		accountService.updateLimitAccount(transaction, balance);
 
-		transaction = transactionRepository.findTransaction(transactionId, null, null, null);
+		transaction = transactionRepository.getTransaction(transactionId, null, null, null);
 		return transaction;
 }
 
@@ -80,7 +80,7 @@ public class TransactionService {
 		Double balance = downPaymentInTransactions(payment);
 		Integer transactionId = transactionRepository.insertTransaction(payment.getAccountId(), OperationType.PAGAMENTO.getId(), payment.getAmount(), balance, null);
 
-		return transactionRepository.findTransaction(transactionId, null, null, null);
+		return transactionRepository.getTransaction(transactionId, null, null, null);
 	}
 
 	/**
@@ -95,6 +95,7 @@ public class TransactionService {
 
 		List<TransactionDTO> transactions = new ArrayList<>();
 		for (TransactionDTO payment : payments) {
+			insertTransactionValidate(payment);
 			payment = insertPayment(payment);
 			transactions.add(payment);
 		}
@@ -156,7 +157,7 @@ public class TransactionService {
 	 * @param transaction transação que terá valor descontado pelo saldo credor
 	 */
 	protected void downCreditBalance(TransactionDTO transaction) {
-		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId(), true);
+		TransactionDTO transactionWithCreditBalance = transactionRepository.getTransaction(null, transaction.getAccountId(), OperationType.PAGAMENTO.getId(), true);
 
         Double transactionBalance = transaction.getAmount();
         Double newTransactionBalance = null;
@@ -217,7 +218,7 @@ public class TransactionService {
 	 * @return Double
 	 */
 	private Double getTotalCredit(Integer accountId, Double creditLimitByOperation){
-		TransactionDTO transactionWithCreditBalance = transactionRepository.findTransaction(null, accountId, OperationType.PAGAMENTO.getId(), true);
+		TransactionDTO transactionWithCreditBalance = transactionRepository.getTransaction(null, accountId, OperationType.PAGAMENTO.getId(), true);
 		if(transactionWithCreditBalance != null && transactionWithCreditBalance.getBalance() > 0){
 			return creditLimitByOperation + transactionWithCreditBalance.getBalance();
 		} else {
@@ -240,7 +241,8 @@ public class TransactionService {
 		if (transaction.getAmount() == null)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.cadastro.valor.nulo"));
 
-		if (transaction.getAccountId() == null || transaction.getAccountId() <= 0)
+		AccountDTO account = accountService.getAccount(transaction.getAccountId());
+		if (account == null || transaction.getAccountId() == null || transaction.getAccountId() <= 0)
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("conta.nao.existente"));
 	}
 
@@ -258,4 +260,13 @@ public class TransactionService {
 			throw new ResourceException(HttpStatus.NOT_ACCEPTABLE, sourceMessage.getMessage("transacao.saldo.credor.existente"));
 	}
 
+	/**
+	 * Retorna a lista de transações cadastradas na base de dados.
+	 *
+	 * @param account_id identificador da conta associada a transação
+	 * @return List<TransactionDTO>
+	 */
+	public List<TransactionDTO> getTransactions(Integer account_id) {
+		return transactionRepository.getTransactions(account_id);
+	}
 }

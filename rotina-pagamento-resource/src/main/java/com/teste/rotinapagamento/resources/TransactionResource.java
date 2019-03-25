@@ -27,6 +27,12 @@ public class TransactionResource {
         return ResponseEntity.status(e.getHttpStatus()).body(e.getError());
     }
 
+    @RequestMapping(value = "/transactions", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public ResponseEntity listTransactions(@RequestParam(value = "account_id", required = false) Integer account_id) {
+        List<TransactionDTO> transactions = transactionService.getTransactions(account_id);
+        return ResponseEntity.status(HttpStatus.OK).headers(new HttpHeaders()).body(transactions);
+    }
+
     @RequestMapping(value = "/transactions", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity insertTransaction(@RequestBody TransactionDTO transaction) {
         transaction = transactionService.insertTransaction(transaction);

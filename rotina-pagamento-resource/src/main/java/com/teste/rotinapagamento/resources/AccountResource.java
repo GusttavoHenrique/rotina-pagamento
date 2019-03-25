@@ -46,7 +46,7 @@ public class AccountResource {
     @RequestMapping(value = "/limits", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity listLimits() {
         List<AccountDTO> accounts = accountService.getAccounts();
-        return ResponseEntity.status(HttpStatus.CREATED).headers(new HttpHeaders()).body(accounts);
+        return ResponseEntity.status(HttpStatus.OK).headers(new HttpHeaders()).body(accounts);
     }
 
 }

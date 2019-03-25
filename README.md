@@ -79,6 +79,30 @@ GET http://localhost:8080/payment-routine/v1/accounts/limits
 Obs: `credit_balance` é o saldo credor da conta. Esse saldo não é acrescentado ao limite, mas pode ser abatido nas próximas 
 transações de compras ou saque. 
 
+###Consulta de Transações
+
+```
+GET http://localhost:8080/payment-routine/v1/transactions
+```
+
+###Resposta:
+
+```JSON
+[
+    {
+        "transaction_id": 0,
+        "account_id": 0,
+        "operation_type_id": 0,
+        "amount": 0,
+        "balance": 0,
+        "event_date": 0,
+        "due_date": 0
+    }
+]
+```
+
+Obs: o atributo `account_id` poderá ser passado como query para filtrar pelas transações de uma conta específica.
+
 ###Cadastro de Transações
 
 ```
